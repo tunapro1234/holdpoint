@@ -1,0 +1,5 @@
+# Heavy ML deps. CPU wheels locally; on AMD use the ROCm PyTorch build instead of this index.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.3
+torchvision>=0.18
+segmentation-models-pytorch>=0.3.3

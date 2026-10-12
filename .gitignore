@@ -1,0 +1,9 @@
+data/raw/
+.env
+.venv/
+results/tmp/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+indirilen/
