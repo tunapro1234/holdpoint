@@ -35,5 +35,14 @@ pip install -r requirements-ml.txt       # torch + segmentation_models_pytorch (
 python -m pytest -q
 ```
 
+## App
+```bash
+streamlit run app/Home.py              # recorded mode + live CPU on upload, no torch needed
+docker compose up --build              # same, in a container on 127.0.0.1:8501
+```
+Pages: Inspect · Review queue · Defects · Benchmarks · Data & limits. The bundled `examples/` are drawn images
+(synthetic texture, drawn line, drawn scale card) with results from the classical CPU baseline, and are labelled
+as such in the app. Set `HOLDPOINT_RECORDED` to a results file computed on AMD hardware to show those instead.
+
 ## License
 MIT. Dataset and model attributions: see [ATTRIBUTION.md](ATTRIBUTION.md).

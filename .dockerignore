@@ -1,0 +1,8 @@
+.venv
+.git
+data/raw
+results/tmp
+**/__pycache__
+.pytest_cache
+.env
+CLAUDE.md*

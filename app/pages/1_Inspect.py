@@ -1,0 +1,93 @@
+import json
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+import streamlit as st  # noqa: E402
+
+from app.common import (  # noqa: E402
+    EXAMPLES,
+    STATE_LABEL,
+    glossary,
+    provenance_badge,
+    push_queue,
+    read_rgb,
+    recorded_path,
+    table_label,
+    threshold_table,
+)
+from holdpoint.backends import get_backend  # noqa: E402
+from holdpoint.backends.recorded import NotRecorded  # noqa: E402
+from holdpoint.pipeline import inspect, overlay  # noqa: E402
+
+st.set_page_config(page_title="Inspect · HoldPoint", layout="wide")
+st.title("Inspect")
+glossary()
+
+table = threshold_table()
+table_label(table)
+
+examples = sorted(EXAMPLES.glob("*.jpg")) + sorted(EXAMPLES.glob("*.png"))
+c1, c2 = st.columns(2)
+source = c1.radio("Photo", ["Recorded example", "Upload (live on CPU)"], horizontal=True)
+element_class = c2.selectbox("Element class (from the threshold table)", list(table.limits_mm))
+element_id = c2.text_input("Element id (from the QR label)", value="P-14")
+
+img, backend = None, None
+if source == "Recorded example":
+    if not examples:
+        st.info("No example images found.")
+    else:
+        pick = c1.selectbox("Example", examples, format_func=lambda p: p.stem)
+        img = read_rgb(pick)
+        backend = get_backend("recorded", path=recorded_path()) if recorded_path().exists() else get_backend("cpu")
+else:
+    up = c1.file_uploader("Photo of a concrete surface with the scale card in view", type=["jpg", "jpeg", "png"])
+    if up is not None:
+        img = read_rgb(up.getvalue())
+        backend = get_backend("cpu")
+
+if img is not None:
+    try:
+        insp = inspect(img, backend, table, element_class)
+    except NotRecorded:
+        st.warning("This image has no recorded result; processing live on CPU instead.")
+        insp = inspect(img, get_backend("cpu"), table, element_class)
+
+    left, right = st.columns([3, 2])
+    left.image(overlay(img, insp), caption="Crack mask in orange, scale card outline in cyan", width="stretch")
+    with right:
+        w = insp.width
+        st.metric("Crack width", w.text())
+        if w.reason:
+            st.caption(w.reason)
+        s = insp.suggestion
+        st.metric("Suggestion", STATE_LABEL[s.state])
+        st.caption(f"{s.reason}" + (f" · limit {s.limit_mm} mm ({s.table_label})" if s.limit_mm else ""))
+        st.markdown(f"**Second check:** {insp.vlm_label.replace('_', ' ')}. {insp.vlm_sentence}")
+        if insp.p_crack is not None:
+            st.caption(f"Crack score {insp.p_crack:.2f}")
+        for step, prov in insp.provenance.items():
+            provenance_badge(prov, title=step)
+        st.caption("The suggestion is not a decision. An inspector decides in the Review queue.")
+        if st.button("Send to review queue", type="primary"):
+            push_queue({
+                "element_id": element_id,
+                "element_class": element_class,
+                "photo_sha256": insp.image_sha256,
+                "band_mm": list(w.band_mm) if w.band_mm else None,
+                "width_text": w.text(),
+                "suggestion": s.state,
+                "limit_mm": s.limit_mm,
+                "vlm_label": insp.vlm_label,
+                "vlm_sentence": insp.vlm_sentence,
+                "model_version": insp.provenance["segment"].get("model", "?"),
+                "provenance": insp.provenance,
+                "queued_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            })
+            st.success(f"Queued {element_id} for review.")
+    with st.expander("Raw result (JSON)"):
+        summary = insp.summary()
+        st.code(json.dumps(summary, indent=1, default=str), language="json")

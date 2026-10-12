@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        WITH_ML: "0"
+    image: holdpoint:local
+    ports:
+      - "127.0.0.1:8501:8501"  # local only
+    environment:
+      HOLDPOINT_STATE: /app/results/tmp/app-state
+      HOLDPOINT_RESULTS: /app/results
+    volumes:
+      - ./results:/app/results

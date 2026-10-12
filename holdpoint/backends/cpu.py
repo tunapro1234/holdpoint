@@ -77,19 +77,25 @@ class CpuBackend(Backend):
         return VlmResult(label="unclear", sentence="No vision-language model on the CPU backend.", provenance=prov)
 
 
-def baseline_mask(img: np.ndarray, kernel: int = 15, min_area: int = 20) -> np.ndarray:
-    """Dark thin structures: black-hat top-hat, Otsu threshold, drop tiny blobs."""
+def baseline_mask(img: np.ndarray, kernel: int = 15, min_contrast: int = 25, min_area: int = 20,
+                  min_area_frac: float = 1e-4, min_elongation: float = 4.0) -> np.ndarray:
+    """Dark thin structures: black-hat top-hat, threshold (Otsu, never below min_contrast grey levels),
+    keep only blobs that are big enough and elongated (length^2 / area), like cracks."""
     import cv2
 
-    gray = to_gray(img)
+    gray = cv2.GaussianBlur(to_gray(img), (3, 3), 0)
     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel, kernel))
     bh = cv2.morphologyEx(gray, cv2.MORPH_BLACKHAT, k)
-    if int(bh.max()) == 0:
+    if int(bh.max()) < min_contrast:
         return np.zeros(gray.shape, dtype=bool)
-    _, th = cv2.threshold(bh, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    otsu, _ = cv2.threshold(bh, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    th = (bh >= max(otsu, min_contrast)).astype(np.uint8)
+    th = cv2.morphologyEx(th, cv2.MORPH_CLOSE, np.ones((3, 3), np.uint8))
     n, labels, stats, _ = cv2.connectedComponentsWithStats(th, connectivity=8)
-    keep = np.zeros(n, dtype=bool)
-    keep[1:] = stats[1:, cv2.CC_STAT_AREA] >= min_area
+    area = stats[:, cv2.CC_STAT_AREA].astype(np.float64)
+    diag2 = stats[:, cv2.CC_STAT_WIDTH].astype(np.float64) ** 2 + stats[:, cv2.CC_STAT_HEIGHT].astype(np.float64) ** 2
+    keep = (area >= max(min_area, min_area_frac * gray.size)) & (diag2 / np.maximum(area, 1) >= min_elongation)
+    keep[0] = False
     return keep[labels]
 
 

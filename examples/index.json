@@ -1,0 +1,38 @@
+[
+ {
+  "file": "example-1-card-head-on.jpg",
+  "image_sha256": "c94faece157eb732008a9f3166be9fc962447d319cb846214df79032d6282ea8",
+  "synthetic": true,
+  "seed": 1,
+  "width_mm": [
+   0.6,
+   1.2
+  ],
+  "card": true,
+  "tilt": false
+ },
+ {
+  "file": "example-2-card-tilted.jpg",
+  "image_sha256": "ba6f01859da9ed3235a6fa5da2ed2fc45a64cddf4b2739879198c34b85a483c5",
+  "synthetic": true,
+  "seed": 2,
+  "width_mm": [
+   0.3,
+   0.5
+  ],
+  "card": true,
+  "tilt": true
+ },
+ {
+  "file": "example-3-no-card.jpg",
+  "image_sha256": "b923b1f91399c0708edf030df98c4c61fff858343498203c3aa08d13eadb238a",
+  "synthetic": true,
+  "seed": 3,
+  "width_mm": [
+   0.6,
+   1.0
+  ],
+  "card": false,
+  "tilt": false
+ }
+]
