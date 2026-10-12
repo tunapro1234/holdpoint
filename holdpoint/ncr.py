@@ -30,9 +30,16 @@ def numbers_in(text: str) -> list[str]:
     return NUMBER_RE.findall(text)
 
 
+def _is_hash_key(key) -> bool:
+    k = str(key).lower()
+    return "sha" in k or "hash" in k
+
+
 def _field_numbers(obj) -> set[str]:
     if isinstance(obj, dict):
-        return set().union(*(_field_numbers(v) for v in obj.values())) if obj else set()
+        # hashes are not quantities: digit runs inside a hex digest must not whitelist numbers
+        vals = [v for k, v in obj.items() if not _is_hash_key(k)]
+        return set().union(*(_field_numbers(v) for v in vals)) if vals else set()
     if isinstance(obj, (list, tuple)):
         return set().union(*(_field_numbers(v) for v in obj)) if obj else set()
     if isinstance(obj, bool) or obj is None:

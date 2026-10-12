@@ -179,3 +179,11 @@ def test_ledger_rejects_bad_decisions(tmp_path):
     with pytest.raises(LedgerError):
         add(led, who=" ")
     assert led.entries() == []
+
+
+def test_number_guard_ignores_digits_inside_hashes():
+    from holdpoint.ncr import NumberGuardError, check_numbers
+    fields = {"element_id": "P-14", "photo_sha256": "39" + "ab" * 31, "band_mm": [0.15, 0.35]}
+    check_numbers("Crack width 0.15-0.35 mm on P-14.", fields)
+    with pytest.raises(NumberGuardError):
+        check_numbers("Crack is 39 cm long.", fields)
