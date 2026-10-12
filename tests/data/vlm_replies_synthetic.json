@@ -1,0 +1,28 @@
+{
+  "synthetic": true,
+  "note": "Hand-written replies that imitate what a VLM might return. Not model output. Used only to test the parser.",
+  "cases": [
+    {"id": "clean_crack", "reply": "{\"label\": \"crack\", \"sentence\": \"A thin dark line with sharp edges runs across the surface.\"}",
+     "label": "crack", "flags": []},
+    {"id": "clean_stain", "reply": "{\"label\": \"form_oil_stain\", \"sentence\": \"A soft-edged darker patch with no break in the surface.\"}",
+     "label": "form_oil_stain", "flags": []},
+    {"id": "chatty_wrapper", "reply": "Sure, here is the answer: {\"label\": \"shadow\", \"sentence\": \"Shading from the edge of a formwork board.\"}",
+     "label": "shadow", "flags": ["extra_text"]},
+    {"id": "off_vocab", "reply": "{\"label\": \"spalling\", \"sentence\": \"Surface flakes are missing.\"}",
+     "label": "unclear", "flags": ["off_vocabulary"]},
+    {"id": "digits", "reply": "{\"label\": \"crack\", \"sentence\": \"The crack is about 0.3 mm wide.\"}",
+     "label": "crack", "flags": ["numeric_content"]},
+    {"id": "number_word", "reply": "{\"label\": \"crack\", \"sentence\": \"Two parallel cracks cross the corner.\"}",
+     "label": "crack", "flags": ["numeric_content"]},
+    {"id": "unit_only", "reply": "{\"label\": \"crack\", \"sentence\": \"A hairline crack a few millimetres long.\"}",
+     "label": "crack", "flags": ["numeric_content"]},
+    {"id": "extra_key", "reply": "{\"label\": \"crack\", \"sentence\": \"Thin line.\", \"width_mm\": 0.2}",
+     "label": "unclear", "flags": ["schema_violation"]},
+    {"id": "missing_sentence", "reply": "{\"label\": \"crack\"}",
+     "label": "unclear", "flags": ["schema_violation"]},
+    {"id": "label_not_string", "reply": "{\"label\": [\"crack\"], \"sentence\": \"Thin line.\"}",
+     "label": "unclear", "flags": ["schema_violation"]},
+    {"id": "not_json", "reply": "It looks like a crack to me.",
+     "label": "unclear", "flags": ["schema_violation"]}
+  ]
+}
