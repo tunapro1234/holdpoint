@@ -1,0 +1,12 @@
+# EXAMPLE VALUES, NOT A STANDARD.
+# Crack-width limits differ by project, code, exposure and element. Replace this table with the limits
+# from your own specification before using HoldPoint for real decisions.
+name: example table
+label: "example values, not a standard"
+classes:
+  interior_dry:
+    max_width_mm: 0.4
+  exterior_exposed:
+    max_width_mm: 0.3
+  water_retaining:
+    max_width_mm: 0.2
