@@ -31,6 +31,7 @@ class CpuBackend(Backend):
         self.weights = Path(w) if w else None
         self.encoder = encoder
         self._net = None  # loaded lazily
+        self._norm = None  # (mean, std) from the checkpoint, if it has them
 
     # -- model selection ------------------------------------------------------
     def _unet(self):
@@ -44,8 +45,13 @@ class CpuBackend(Backend):
             import segmentation_models_pytorch as smp
         except ImportError:
             return None
+        state = torch.load(self.weights, map_location="cpu", weights_only=False)
+        meta = state.get("meta", {}) if isinstance(state, dict) else {}
+        # checkpoints from holdpoint.vision.train_seg carry their encoder and input normalization
+        self.encoder = meta.get("encoder", self.encoder)
+        norm = meta.get("input", {})
+        self._norm = (norm["mean"], norm["std"]) if "mean" in norm else None
         net = smp.Unet(encoder_name=self.encoder, encoder_weights=None, in_channels=3, classes=1)
-        state = torch.load(self.weights, map_location="cpu")
         net.load_state_dict(state.get("state_dict", state) if isinstance(state, dict) else state)
         net.eval()
         self._net = net
@@ -62,7 +68,7 @@ class CpuBackend(Backend):
     # -- tasks ----------------------------------------------------------------
     def segment(self, img: np.ndarray) -> SegmentResult:
         net = self._unet()
-        mask = _unet_mask(net, img) if net is not None else baseline_mask(img)
+        mask = _unet_mask(net, img, norm=self._norm) if net is not None else baseline_mask(img)
         return SegmentResult(mask=mask, provenance=self.provenance())
 
     def classify(self, img: np.ndarray) -> ClassifyResult:
@@ -99,13 +105,15 @@ def baseline_mask(img: np.ndarray, kernel: int = 15, min_contrast: int = 25, min
     return keep[labels]
 
 
-def _unet_mask(net, img: np.ndarray, threshold: float = 0.5) -> np.ndarray:
+def _unet_mask(net, img: np.ndarray, threshold: float = 0.5, norm: tuple | None = None) -> np.ndarray:
     import torch
 
     arr = np.asarray(img)
     if arr.ndim == 2:
         arr = np.stack([arr] * 3, axis=-1)
     arr = arr[..., :3].astype(np.float32) / 255.0
+    if norm is not None:
+        arr = (arr - np.asarray(norm[0], np.float32)) / np.asarray(norm[1], np.float32)
     h, w = arr.shape[:2]
     ph, pw = (-h) % 32, (-w) % 32  # UNet needs sides divisible by 32
     arr = np.pad(arr, ((0, ph), (0, pw), (0, 0)), mode="reflect")
