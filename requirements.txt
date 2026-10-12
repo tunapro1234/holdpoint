@@ -2,6 +2,7 @@
 numpy>=1.26
 opencv-python-headless>=4.9
 scikit-image>=0.22
+scipy>=1.11
 streamlit>=1.38
 pytest>=8.0
 pypdf>=4.0
