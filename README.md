@@ -124,7 +124,8 @@ _No benchmark results yet. `bench/bench.py` writes them to `results/bench-*.json
 - **Provenance:** where a result was computed: backend, device, model version, timestamp, command.
 
 ## Attribution
-Datasets: SDNET2018 and Concrete Crack Images for Classification (Özgenel), both CC BY 4.0. Models and libraries:
+Datasets: Concrete Crack Segmentation Dataset (Özgenel), SDNET2018 and Concrete Crack Images for Classification
+(Özgenel), all CC BY 4.0. Models and libraries:
 segmentation_models_pytorch (MIT), Qwen2.5-VL-7B-Instruct (Apache-2.0), PyTorch, OpenCV, scikit-image, NumPy.
 Full citations: [ATTRIBUTION.md](ATTRIBUTION.md).
 
