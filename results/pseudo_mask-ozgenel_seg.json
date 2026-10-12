@@ -1,0 +1,17 @@
+{
+  "what": "pseudo masks (threshold + morphology) vs real masks, Concrete Crack Segmentation Dataset, all 458 photos",
+  "computed": "live on CPU, 2026-10-13",
+  "command": "python -m holdpoint.vision.pseudo_mask --eval data/raw/ozgenel_seg/extracted/rgb data/raw/ozgenel_seg/extracted/BW",
+  "n": 458,
+  "mean_iou": 0.3826237238875883,
+  "median_iou": 0.3674432125272483,
+  "max_side": 1024,
+  "params": {
+    "blur": 5,
+    "blackhat_frac": 0.06,
+    "min_contrast": 12.0,
+    "min_area_frac": 0.0008,
+    "min_elongation": 3.0,
+    "close": 3
+  }
+}

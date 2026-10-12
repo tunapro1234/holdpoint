@@ -1,0 +1,15 @@
+{
+  "dataset": "ozgenel_cls",
+  "seed": 20261012,
+  "fractions": [
+    0.7,
+    0.15,
+    0.15
+  ],
+  "root": "data/raw/ozgenel_cls/extracted",
+  "counts": {
+    "train": 28000,
+    "val": 6000,
+    "test": 6000
+  }
+}

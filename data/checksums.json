@@ -1,0 +1,14 @@
+{
+  "ozgenel_seg": {
+    "concreteCrackSegmentationDataset.rar": {
+      "sha256": "1b8458ab6f84dc5086e9af8579e2cabccd3d209df97b46622096a4c105d5a6b2",
+      "source": "mendeley public API, verified"
+    }
+  },
+  "ozgenel_cls": {
+    "Concrete Crack Images for Classification.rar": {
+      "sha256": "08d7dc505a4f5a0330cee2fa2a1ae4b5b4f98bcffd0549b774caf7959bb1f02f",
+      "source": "mendeley public API, verified"
+    }
+  }
+}
