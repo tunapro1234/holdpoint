@@ -1,0 +1,76 @@
+{
+  "what": "UNet resnet18, 20 epochs, 256 px, 4 seeds; held-out Ozgenel test split (68 real masks), short side 256 + centre crop, threshold 0.5; std = sample std over seeds",
+  "source": "python -m holdpoint.vision.train_seg --device cuda --epochs 20 --encoder resnet18 --weights imagenet --size 256 --batch 8 --seed <seed>, on NVIDIA RTX 3060; results zip zip sha256 266a2c970603868ffcba671f85f6008fcab2521971d67c43e7ccca96218ee6c4",
+  "runs": {
+    "seg-gpu-1": {
+      "seed": 20261012,
+      "best_epoch": 15,
+      "val_iou": 0.6113740025850006,
+      "iou": 0.569749319518834,
+      "f1": 0.7259112170769736,
+      "precision": 0.6908110985428172,
+      "recall": 0.7647691446418574,
+      "mean_image_iou": 0.5746159589281135,
+      "n": 68,
+      "gpu": "NVIDIA GeForce RTX 3060"
+    },
+    "seg-gpu-s1": {
+      "seed": 1,
+      "best_epoch": 16,
+      "val_iou": 0.5860881013769269,
+      "iou": 0.5687632717486345,
+      "f1": 0.7251103872602244,
+      "precision": 0.7127589936247724,
+      "recall": 0.7378974041662983,
+      "mean_image_iou": 0.5771544685025409,
+      "n": 68,
+      "gpu": "NVIDIA GeForce RTX 3060"
+    },
+    "seg-gpu-s2": {
+      "seed": 2,
+      "best_epoch": 16,
+      "val_iou": 0.6024846078978161,
+      "iou": 0.5811615021547302,
+      "f1": 0.7351070733290072,
+      "precision": 0.7198779867819014,
+      "recall": 0.750994431185362,
+      "mean_image_iou": 0.5892290900574839,
+      "n": 68,
+      "gpu": "NVIDIA GeForce RTX 3060"
+    },
+    "seg-gpu-s3": {
+      "seed": 3,
+      "best_epoch": 16,
+      "val_iou": 0.5999555851654452,
+      "iou": 0.5721993127147766,
+      "f1": 0.7278966579965465,
+      "precision": 0.7200432432432432,
+      "recall": 0.7359232741094316,
+      "mean_image_iou": 0.5797888585073524,
+      "n": 68,
+      "gpu": "NVIDIA GeForce RTX 3060"
+    }
+  },
+  "test_mean_std": {
+    "iou": {
+      "mean": 0.5729683515342439,
+      "std": 0.005649896781222255
+    },
+    "f1": {
+      "mean": 0.7285063339156879,
+      "std": 0.0045536999836125825
+    },
+    "precision": {
+      "mean": 0.7108728305481835,
+      "std": 0.01379879233843801
+    },
+    "recall": {
+      "mean": 0.7473960635257373,
+      "std": 0.013374373803393264
+    },
+    "mean_image_iou": {
+      "mean": 0.5801970939988726,
+      "std": 0.006380967732465359
+    }
+  }
+}
