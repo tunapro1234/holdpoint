@@ -114,3 +114,14 @@ def test_benchmarks_amd_notice_goes_away_with_amd_result(isolated):
         "rows": [{"batch": 1}],
     }))
     assert "not measured yet" not in all_text(run("pages/4_Benchmarks.py"))
+
+
+def test_inspect_real_photo_example_is_labelled_real():
+    at = run("pages/1_Inspect.py")
+    opts = [o for o in at.selectbox[0].options if "ozgenel-test" in o]
+    assert opts, "bundled real-photo examples missing"
+    at.selectbox[0].set_value(opts[0]).run()
+    assert not at.exception
+    text = all_text(at)
+    assert "computed on CPU" in text and "unet-resnet18" in text
+    assert any(m.label == "Crack width" for m in at.metric)

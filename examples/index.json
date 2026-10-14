@@ -34,5 +34,45 @@
   ],
   "card": false,
   "tilt": false
+ },
+ {
+  "file": "ozgenel-test-018.jpg",
+  "image_sha256": "7de455d57ab66737de6856f4e143b62186911e988d43d072304f6e7d4aacaec3",
+  "synthetic": false,
+  "source": "ozgenel_seg test split",
+  "original": "018.jpg",
+  "license": "CC BY 4.0",
+  "card": false,
+  "iou_vs_real_mask": 0.605
+ },
+ {
+  "file": "ozgenel-test-034.jpg",
+  "image_sha256": "3b039c4d12eb0b0de045fa7a36315827dbb876e05b2ab0ea256c44abea0038c1",
+  "synthetic": false,
+  "source": "ozgenel_seg test split",
+  "original": "034.jpg",
+  "license": "CC BY 4.0",
+  "card": false,
+  "iou_vs_real_mask": 0.8135
+ },
+ {
+  "file": "ozgenel-test-037.jpg",
+  "image_sha256": "b2473e8026f955ef1a8df2c478730b0fac56ed98a130b4e78194bda9279b23f3",
+  "synthetic": false,
+  "source": "ozgenel_seg test split",
+  "original": "037.jpg",
+  "license": "CC BY 4.0",
+  "card": false,
+  "iou_vs_real_mask": 0.7182
+ },
+ {
+  "file": "ozgenel-test-048.jpg",
+  "image_sha256": "886352aa347a7ef6406b50e630622bef4f740952503a0486ce87e5e0ca71460a",
+  "synthetic": false,
+  "source": "ozgenel_seg test split",
+  "original": "048.jpg",
+  "license": "CC BY 4.0",
+  "card": false,
+  "iou_vs_real_mask": 0.7448
  }
 ]
