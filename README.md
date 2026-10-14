@@ -7,6 +7,11 @@
 > Built during the AMD Developer Hackathon: ACT III. Work in progress; the [Limits](#limits) section says what is
 > not done yet.
 
+**Measured so far.** Crack segmentation on 68 held-out photos (Özgenel set): UNet IoU 0.573 ± 0.006 over four
+seeds, against 0.268 for a classical black-hat + Otsu baseline on the same photos and view. Inference speed on an
+NVIDIA RTX 3060: 87.5 images/s at batch 1 (512 px). **Nothing has run on AMD hardware yet**; steps 4 and 5 below
+need a model endpoint that is not live yet. Width in mm has not been checked against a crack gauge.
+
 ## What it does
 1. A phone photo of a concrete element, with a printed ArUco scale card in view, goes in.
 2. A crack mask is segmented. Width is measured from the mask and reported as a **range in mm**, never a single
@@ -14,9 +19,10 @@
 3. The range is compared with the user's own threshold table and the app suggests one of: accept, repair, measure
    with a gauge, width not measurable. There is no built-in standard; the demo table is labelled
    "example values, not a standard".
-4. A vision-language model gives a second opinion from a fixed vocabulary (crack, form oil stain, shadow, joint
+4. *(Not live yet: needs a vision-language model endpoint; without one the check says "unclear".)*
+   A vision-language model gives a second opinion from a fixed vocabulary (crack, form oil stain, shadow, joint
    edge, air void, exposed rebar, unclear) and one sentence. It is not allowed to write numbers.
-5. A defect report is drafted. Every number in its text must come from the measurement fields; a draft with an
+5. A defect report is drafted (template text until a language model endpoint is set). Every number in its text must come from the measurement fields; a draft with an
    invented number is rejected and replaced by the template text.
 6. An inspector approves or overrides (with an objection code). Each decision is appended to a hash-chained log:
    who, when, model version, photo SHA-256, suggestion, decision.
@@ -41,10 +47,10 @@ _Screenshot pending: it will be taken from the running app, not mocked up._
  +--------|---------+                            |
           v                                      v
  +------------------+            +-------------------------------------+
- | decide.py        |            | AMD Instinct MI300X (ROCm)          |
- |  user threshold  |            |  UNet segmentation, batch inference |
- |  table -> state  |            |  vLLM + Qwen2.5-VL-7B second check  |
- +--------|---------+            |  bench: img/s, p50/p95, cost/1000   |
+ | decide.py        |            | GPU / model server (planned)        |
+ |  user threshold  |            |  UNet batch inference + bench       |
+ |  table -> state  |            |  VLM second check (OpenAI API)      |
+ +--------|---------+            |  run so far: RTX 3060 bench only    |
           v                      +-------------------------------------+
  +------------------+   +-------------------+   +----------------------+
  | ncr.py           |-->| ledger.py         |-->| defects/             |
@@ -59,7 +65,7 @@ Numbers come from deterministic code (`measure/`, `decide.py`). The language mod
 |---|---|---|
 | `cpu` | local CPU; UNet weights if present, otherwise a classical image-processing fallback | "live on CPU" |
 | `recorded` | reads results computed earlier from a JSON file | "computed on <device>, <date>, <command>" |
-| `amd_vllm` | OpenAI-compatible vLLM server (`HOLDPOINT_VLLM_BASE_URL`) | "live on AMD" |
+| `amd_vllm` | OpenAI-compatible vLLM server (`HOLDPOINT_VLLM_BASE_URL`); not run yet | "live on AMD" |
 
 ## How to run
 Python 3.12. The light install is enough for the app and the tests; torch is optional.
@@ -127,7 +133,7 @@ checkpoint) against 0.570 with them; classical 0.266.
 
 ## Measurements
 The table is generated from `results/bench-*.json`. Each row names the device, time and command it came from.
-The files are written by `bench/bench.py` (run on AMD from `notebooks/bench.ipynb`, with a CPU run for comparison):
+The files are written by `bench/bench.py` (`notebooks/bench.ipynb` is the AMD notebook; it has not been run yet):
 ```bash
 python bench/bench.py --backend unet --checkpoint runs/seg/model.pt --images examples --device auto
 # cost per 1000 images only with a price and its source; there is no default price
