@@ -128,6 +128,19 @@ def test_cpu_unet_path_with_torch(tmp_path):
     assert seg.provenance["model"] == "unet-resnet18:unet.pt"
 
 
+def test_cpu_unet_resizes_to_side_and_back(tmp_path):
+    torch = pytest.importorskip("torch")
+    smp = pytest.importorskip("segmentation_models_pytorch")
+    net = smp.Unet(encoder_name="resnet18", encoder_weights=None, in_channels=3, classes=1)
+    w = tmp_path / "unet.pt"
+    torch.save(net.state_dict(), w)
+    seen = []
+    be = get_backend("cpu", weights=w, side=64)
+    be._unet().register_forward_hook(lambda m, i, o: seen.append(tuple(i[0].shape[-2:])))
+    assert be.segment(crack_image(120, 200)).mask.shape == (120, 200)
+    assert seen == [(64, 64)]  # long side 200 -> 64, short side 38 padded to 64
+
+
 # -- amd_vllm -------------------------------------------------------------------
 
 def test_amd_vllm_needs_base_url(monkeypatch):

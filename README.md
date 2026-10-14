@@ -81,6 +81,7 @@ Useful settings:
 |---|---|
 | `HOLDPOINT_RECORDED` | results file the `recorded` backend replays (default: `examples/recorded.json`) |
 | `HOLDPOINT_UNET_WEIGHTS` | UNet weights for the `cpu` backend; without it the classical fallback runs |
+| `HOLDPOINT_UNET_SIDE` | long side a photo is resized to before the UNet (default 1024; the model is trained on 256 px crops, the probability map is resized back) |
 | `HOLDPOINT_VLLM_BASE_URL` | vLLM endpoint for the `amd_vllm` backend |
 | `HOLDPOINT_HOLD_WEBHOOK` | where the hold list is posted (optional) |
 

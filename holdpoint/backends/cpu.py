@@ -26,10 +26,12 @@ BASELINE_MODEL = "classical-blackhat-otsu-v0"
 class CpuBackend(Backend):
     name = "cpu"
 
-    def __init__(self, weights: str | os.PathLike | None = None, encoder: str = "resnet18"):
+    def __init__(self, weights: str | os.PathLike | None = None, encoder: str = "resnet18", side: int | None = None):
         w = weights or os.environ.get("HOLDPOINT_UNET_WEIGHTS")
         self.weights = Path(w) if w else None
         self.encoder = encoder
+        # long side the photo is resized to for the UNet (trained on 256 px crops; full-size photos are off-scale)
+        self.side = side or int(os.environ.get("HOLDPOINT_UNET_SIDE", "1024"))
         self._net = None  # loaded lazily
         self._norm = None  # (mean, std) from the checkpoint, if it has them
 
@@ -68,7 +70,7 @@ class CpuBackend(Backend):
     # -- tasks ----------------------------------------------------------------
     def segment(self, img: np.ndarray) -> SegmentResult:
         net = self._unet()
-        mask = _unet_mask(net, img, norm=self._norm) if net is not None else baseline_mask(img)
+        mask = _unet_mask(net, img, norm=self._norm, side=self.side) if net is not None else baseline_mask(img)
         return SegmentResult(mask=mask, provenance=self.provenance())
 
     def classify(self, img: np.ndarray) -> ClassifyResult:
@@ -105,7 +107,10 @@ def baseline_mask(img: np.ndarray, kernel: int = 15, min_contrast: int = 25, min
     return keep[labels]
 
 
-def _unet_mask(net, img: np.ndarray, threshold: float = 0.5, norm: tuple | None = None) -> np.ndarray:
+def _unet_mask(net, img: np.ndarray, threshold: float = 0.5, norm: tuple | None = None,
+               side: int | None = None) -> np.ndarray:
+    """Probability map at long side `side` (None = native size), resized back to the photo."""
+    import cv2
     import torch
 
     arr = np.asarray(img)
@@ -114,10 +119,16 @@ def _unet_mask(net, img: np.ndarray, threshold: float = 0.5, norm: tuple | None 
     arr = arr[..., :3].astype(np.float32) / 255.0
     if norm is not None:
         arr = (arr - np.asarray(norm[0], np.float32)) / np.asarray(norm[1], np.float32)
+    h0, w0 = arr.shape[:2]
+    if side and max(h0, w0) != side:
+        s = side / max(h0, w0)
+        arr = cv2.resize(arr, (max(32, round(w0 * s)), max(32, round(h0 * s))), interpolation=cv2.INTER_AREA)
     h, w = arr.shape[:2]
     ph, pw = (-h) % 32, (-w) % 32  # UNet needs sides divisible by 32
     arr = np.pad(arr, ((0, ph), (0, pw), (0, 0)), mode="reflect")
     x = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0)
     with torch.no_grad():
-        prob = torch.sigmoid(net(x))[0, 0].numpy()
-    return prob[:h, :w] >= threshold
+        prob = torch.sigmoid(net(x))[0, 0].numpy()[:h, :w]
+    if (h, w) != (h0, w0):
+        prob = cv2.resize(prob, (w0, h0), interpolation=cv2.INTER_LINEAR)
+    return prob >= threshold
