@@ -1,0 +1,87 @@
+{
+  "method": "dHash + pHash, 64 bit each, full image grayscale; both Hamming distances <= max_dist",
+  "max_dist": 10,
+  "n_test": 68,
+  "n_reference": 390,
+  "n_near_duplicates": 3,
+  "near_duplicates": [
+    "516.JPG",
+    "276.jpg",
+    "283.jpg"
+  ],
+  "min_combined_dist": 0,
+  "closest_pairs": [
+    {
+      "test": "516.JPG",
+      "closest": "train/277.jpg",
+      "dhash_dist": 0,
+      "phash_dist": 0,
+      "near_duplicate": true
+    },
+    {
+      "test": "276.jpg",
+      "closest": "train/515.JPG",
+      "dhash_dist": 0,
+      "phash_dist": 2,
+      "near_duplicate": true
+    },
+    {
+      "test": "283.jpg",
+      "closest": "train/523.JPG",
+      "dhash_dist": 0,
+      "phash_dist": 2,
+      "near_duplicate": true
+    },
+    {
+      "test": "212.jpg",
+      "closest": "train/094.jpg",
+      "dhash_dist": 9,
+      "phash_dist": 14,
+      "near_duplicate": false
+    },
+    {
+      "test": "258.jpg",
+      "closest": "train/118.jpg",
+      "dhash_dist": 9,
+      "phash_dist": 14,
+      "near_duplicate": false
+    },
+    {
+      "test": "267.jpg",
+      "closest": "train/177.jpg",
+      "dhash_dist": 5,
+      "phash_dist": 20,
+      "near_duplicate": false
+    },
+    {
+      "test": "168.jpg",
+      "closest": "val/146.jpg",
+      "dhash_dist": 6,
+      "phash_dist": 20,
+      "near_duplicate": false
+    },
+    {
+      "test": "193.jpg",
+      "closest": "train/198.jpg",
+      "dhash_dist": 8,
+      "phash_dist": 18,
+      "near_duplicate": false
+    },
+    {
+      "test": "469.JPG",
+      "closest": "train/408.JPG",
+      "dhash_dist": 10,
+      "phash_dist": 16,
+      "near_duplicate": false
+    },
+    {
+      "test": "498.JPG",
+      "closest": "train/542.JPG",
+      "dhash_dist": 8,
+      "phash_dist": 18,
+      "near_duplicate": false
+    }
+  ],
+  "created": "2026-10-14T04:25:10+00:00",
+  "command": "python tools/near_dupes.py --out results/near-dupes-test.json"
+}

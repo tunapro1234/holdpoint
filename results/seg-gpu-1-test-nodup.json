@@ -1,0 +1,40 @@
+{
+  "checkpoint": "runs/seg-gpu-1/model.pt",
+  "part": "test",
+  "view": "short side 256, centre 256x256 crop",
+  "full": {
+    "precision": 0.6908152130519256,
+    "recall": 0.7647838769557147,
+    "f1": 0.7259201252936571,
+    "accuracy": 0.9912037568933824,
+    "iou": 0.5697602950215119,
+    "tp": 51912,
+    "fp": 23234,
+    "fn": 15966,
+    "tn": 4365336,
+    "n": 68,
+    "mean_image_iou": 0.5746274828560812,
+    "threshold": 0.5
+  },
+  "excluded": [
+    "276.jpg",
+    "283.jpg",
+    "516.JPG"
+  ],
+  "without_excluded": {
+    "precision": 0.6908685968819599,
+    "recall": 0.7623377620766454,
+    "f1": 0.7248457409909088,
+    "accuracy": 0.9911543626051683,
+    "iou": 0.5684376896911113,
+    "tp": 49632,
+    "fp": 22208,
+    "fn": 15473,
+    "tn": 4172527,
+    "n": 65,
+    "mean_image_iou": 0.5736945578973219,
+    "threshold": 0.5
+  },
+  "created": "2026-10-14T04:26:53+00:00",
+  "command": "python tools/eval_seg.py --ckpt runs/seg-gpu-1/model.pt --exclude results/near-dupes-test.json --out results/seg-gpu-1-test-nodup.json"
+}

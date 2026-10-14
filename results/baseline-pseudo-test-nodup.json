@@ -1,0 +1,23 @@
+{
+  "method": "classical pseudo mask (holdpoint.vision.pseudo_mask, default params)",
+  "part": "test",
+  "excluded": [
+    "276.jpg",
+    "283.jpg",
+    "516.JPG"
+  ],
+  "view": "short side 256, centre 256x256 crop (same as train_seg evaluate)",
+  "precision": 0.6618876152092762,
+  "recall": 0.3077490208125336,
+  "f1": 0.42014762623720847,
+  "accuracy": 0.987017352764423,
+  "iou": 0.265941067162198,
+  "tp": 20036,
+  "fp": 10235,
+  "fn": 45069,
+  "tn": 4184500,
+  "n": 65,
+  "mean_image_iou": 0.2290908955455852,
+  "created": "2026-10-14T04:25:43+00:00",
+  "command": "python tools/eval_baseline.py --part test --exclude results/near-dupes-test.json --out results/baseline-pseudo-test-nodup.json"
+}

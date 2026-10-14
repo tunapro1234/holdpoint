@@ -35,10 +35,13 @@ def main(argv=None) -> int:
     ap.add_argument("--splits", type=Path, default=Path("data/splits/ozgenel_seg"))
     ap.add_argument("--part", default="test", choices=["train", "val", "test"])
     ap.add_argument("--size", type=int, default=256)
+    ap.add_argument("--exclude", type=Path, help="near_dupes.py output; its near_duplicates are left out")
     ap.add_argument("--out", type=Path)
     a = ap.parse_args(argv)
 
     items = real_items(a.root, common.read_split_list(a.splits, a.part))
+    drop = set(json.loads(a.exclude.read_text())["near_duplicates"]) if a.exclude else set()
+    items = [it for it in items if Path(it[0]).name not in drop]
     tp = fp = fn = tn = 0
     ious = []
     for img_p, mask_p, _ in items:
@@ -48,7 +51,7 @@ def main(argv=None) -> int:
         c = common.binary_counts(pred, truth)
         tp, fp, fn, tn = tp + c[0], fp + c[1], fn + c[2], tn + c[3]
         ious.append(common.prf(*c)["iou"] if c[0] + c[1] + c[2] else 1.0)
-    out = {"method": "classical pseudo mask (holdpoint.vision.pseudo_mask, default params)", "part": a.part,
+    out = {"method": "classical pseudo mask (holdpoint.vision.pseudo_mask, default params)", "part": a.part, "excluded": sorted(drop),
            "view": f"short side {a.size}, centre {a.size}x{a.size} crop (same as train_seg evaluate)",
            **common.prf(tp, fp, fn, tn), "n": len(ious), "mean_image_iou": float(np.mean(ious)) if ious else 0.0,
            "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
