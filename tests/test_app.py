@@ -96,6 +96,7 @@ def test_benchmarks_show_provenance(isolated):
     at = run("pages/4_Benchmarks.py")
     text = all_text(at)
     assert "test-fixture-device" in text and "pytest fixture" in text
+    assert "MI300X: not measured yet" in text
     assert "SYNTHETIC EXAMPLE" in text
     assert len(at.dataframe) == 1
 
@@ -104,3 +105,12 @@ def test_benchmarks_file_without_provenance_is_flagged(isolated):
     (isolated / "results" / "bench-x.json").write_text(json.dumps({"rows": [{"a": 1}]}))
     at = run("pages/4_Benchmarks.py")
     assert "no provenance" in all_text(at)
+
+
+def test_benchmarks_amd_notice_goes_away_with_amd_result(isolated):
+    (isolated / "results" / "bench-amd.json").write_text(json.dumps({
+        "provenance": {"backend": "test", "device": "AMD Instinct MI300X (fixture)", "timestamp": "t", "command": "c",
+                       "synthetic": True},
+        "rows": [{"batch": 1}],
+    }))
+    assert "not measured yet" not in all_text(run("pages/4_Benchmarks.py"))

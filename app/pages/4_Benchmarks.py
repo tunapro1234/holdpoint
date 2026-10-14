@@ -15,6 +15,19 @@ st.caption("Throughput, latency and cost per image. Each file shows where, when 
 glossary()
 
 files = sorted(results_dir().glob("bench-*.json"))
+
+
+def _on_amd(f: Path) -> bool:
+    try:
+        prov = json.loads(f.read_text()).get("provenance") or {}
+    except (json.JSONDecodeError, AttributeError):
+        return False
+    return any(k in str(prov.get("device", "")).lower() for k in ("mi300", "amd", "rocm", "hip"))
+
+
+if not any(_on_amd(f) for f in files):
+    st.warning("**AMD Instinct MI300X: not measured yet.** No result file in results/ was recorded on an AMD GPU, "
+               "so this page shows no AMD numbers and no estimates.")
 if not files:
     st.info("No benchmark results yet. They are written by bench/bench.py to results/bench-*.json.")
 
