@@ -38,7 +38,7 @@ def pick_device(name: str = "auto"):
 def device_info(device) -> dict:
     import torch
 
-    info = {"device": str(device), "torch": torch.__version__, "hip": getattr(torch.version, "hip", None),
+    info = {"device": str(device), "torch": str(torch.__version__), "hip": getattr(torch.version, "hip", None),
             "python": platform.python_version(), "host_cpu": platform.processor() or platform.machine()}
     if device.type == "cuda":
         info["gpu"] = torch.cuda.get_device_name(device)
@@ -156,6 +156,16 @@ def setup_log(out_dir: Path, name: str) -> logging.Logger:
         h.setFormatter(fmt)
         log.addHandler(h)
     return log
+
+
+def load_checkpoint_dict(path) -> dict:
+    """torch.load with weights_only=True (no arbitrary code from the file). Checkpoints written before this fix
+    carry torch.__version__ as a TorchVersion (a str subclass) in their meta, so that one class is allowed."""
+    import torch
+    from torch.torch_version import TorchVersion
+
+    with torch.serialization.safe_globals([TorchVersion]):
+        return torch.load(path, map_location="cpu", weights_only=True)
 
 
 def save_checkpoint(out_dir: Path, state_dict: dict, meta: dict) -> tuple[Path, str]:

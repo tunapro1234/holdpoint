@@ -92,6 +92,39 @@ python -m tools.check_repo               # secrets / personal data / deny-list s
 python -m tools.results_table --write    # regenerate the table below from results/
 ```
 
+## Trained model
+`model.pt` (55 MB) is attached to the GitHub release
+[v0.1-unet](https://github.com/tunapro1234/holdpoint/releases/tag/v0.1-unet).
+sha256 `1a992634324e9ef8b4fedb8e4495ea056c872eee0f8f09c46f774af60865b6a7`. Check it before use:
+```bash
+sha256sum model.pt
+HOLDPOINT_UNET_WEIGHTS=model.pt streamlit run app/Home.py   # the cpu backend then runs the UNet
+```
+The code loads checkpoints with `torch.load(..., weights_only=True)` (`holdpoint/vision/common.py`), so a file
+cannot run code when it is opened.
+
+- **Model:** UNet, ResNet-18 encoder (segmentation_models_pytorch 0.5.0), 20 epochs, 256 px, trained on an
+  NVIDIA RTX 3060. Not trained or measured on AMD hardware.
+- **Data:** Özgenel crack segmentation set, 458 photos with real masks (CC BY 4.0, see Attribution), split once
+  with a fixed seed into 321 train / 69 validation / 68 test (`data/splits/ozgenel_seg`). The best epoch is picked
+  on validation; the test split is measured once, at the end.
+- **Encoder pre-training:** ImageNet weights for ResNet-18 as distributed by segmentation_models_pytorch
+  ([smp-hub/resnet18.imagenet](https://huggingface.co/smp-hub/resnet18.imagenet), license field "other"; the
+  weights were first published by torchvision). The ImageNet images have their own terms of access
+  (non-commercial research). Check both before any commercial use of this checkpoint.
+
+Test split, 68 photos, short side resized to 256 and a 256 x 256 centre crop, threshold 0.5, pixel counts summed
+over the split. Four training runs with different seeds (`results/seg-seeds-test.json`):
+
+| Method | IoU | F1 | Precision | Recall |
+|---|---|---|---|---|
+| UNet, mean ± std over 4 seeds | 0.573 ± 0.006 | 0.729 ± 0.005 | 0.711 ± 0.014 | 0.747 ± 0.013 |
+| Classical baseline (black-hat + Otsu), same photos and view | 0.268 | 0.423 | 0.656 | 0.312 |
+
+Near duplicates: 3 of the 68 test photos are near copies of training photos (dHash and pHash distance 0-2 of 64
+bits, `results/near-dupes-test.json`). Without them (65 photos): UNet IoU 0.568 (seed 20261012 run, the released
+checkpoint) against 0.570 with them; classical 0.266.
+
 ## Measurements
 The table is generated from `results/bench-*.json`. Each row names the device, time and command it came from.
 The files are written by `bench/bench.py` (run on AMD from `notebooks/bench.ipynb`, with a CPU run for comparison):
@@ -115,9 +148,11 @@ _No benchmark results yet. `bench/bench.py` writes them to `results/bench-*.json
   with known widths; that tests the measurement code, not the crack detector.
 - The printed scale card has not yet been tested with real phone photos.
 - Cracks a few pixels wide are not measured; the app says "measure with a gauge".
-- The bundled `examples/` are **drawn** images (synthetic texture, drawn line, drawn card). Their results come
-  from the classical CPU fallback and are labelled as synthetic in the app. Its width ranges are wide
+- The bundled `examples/example-*` are **drawn** images (synthetic texture, drawn line, drawn card). Their results
+  come from the classical CPU fallback and are labelled as synthetic in the app. Its width ranges are wide
   (example 1: 0.06-1.44 mm for a drawn 0.6-1.2 mm line).
+- `examples/ozgenel-test-*` are four real test photos (the first four in split order after removing near
+  duplicates), segmented by the released UNet on CPU. They have no scale card, so the app gives no width in mm.
 - The decision log detects edits and reordering, but not lines cut off the end of the file.
 - No AMD results are in this repository yet; the Benchmarks page and the table above stay empty until they are.
 - The app does not judge structural significance, depth or cause. That is an engineer's call.
@@ -136,7 +171,7 @@ _No benchmark results yet. `bench/bench.py` writes them to `results/bench-*.json
 ## Attribution
 Datasets: Concrete Crack Segmentation Dataset (Özgenel), SDNET2018 and Concrete Crack Images for Classification
 (Özgenel), all CC BY 4.0. Models and libraries:
-segmentation_models_pytorch (MIT), Qwen2.5-VL-7B-Instruct (Apache-2.0), PyTorch, OpenCV, scikit-image, NumPy.
+segmentation_models_pytorch (MIT) with ImageNet ResNet-18 encoder weights (see Trained model), Qwen2.5-VL-7B-Instruct (Apache-2.0), PyTorch, OpenCV, scikit-image, NumPy.
 Full citations: [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ## License

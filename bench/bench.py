@@ -291,7 +291,7 @@ def main(argv=None) -> dict:
     if size is None:
         size = 224 if a.backend == "classifier" else 512
         if a.backend == "classifier" and a.checkpoint:
-            ck = torch.load(a.checkpoint, map_location="cpu", weights_only=False)
+            ck = common.load_checkpoint_dict(a.checkpoint)
             size = int(ck.get("meta", {}).get("input_size", 224))
     rgbs = [square(common.load_rgb(p, min_side=size), size) for p in paths]
     items = runner.prepare(rgbs)

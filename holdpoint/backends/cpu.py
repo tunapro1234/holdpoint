@@ -43,11 +43,13 @@ class CpuBackend(Backend):
         if self.weights is None or not self.weights.is_file():
             return None
         try:
-            import torch
+            import torch  # noqa: F401  (availability check)
             import segmentation_models_pytorch as smp
+
+            from ..vision.common import load_checkpoint_dict
         except ImportError:
             return None
-        state = torch.load(self.weights, map_location="cpu", weights_only=False)
+        state = load_checkpoint_dict(self.weights)
         meta = state.get("meta", {}) if isinstance(state, dict) else {}
         # checkpoints from holdpoint.vision.train_seg carry their encoder and input normalization
         self.encoder = meta.get("encoder", self.encoder)

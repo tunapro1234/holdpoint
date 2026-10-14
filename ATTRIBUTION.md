@@ -18,6 +18,12 @@ and cut into patches for training, and weak "pseudo masks" are derived from imag
   https://doi.org/10.17632/5y9wdsg2zt.2. License: CC BY 4.0. 40,000 patches (227 x 227 px), half with cracks.
   Second source for the crack / no-crack classifier.
 
+## Pre-trained weights
+- ResNet-18 ImageNet encoder weights, loaded through segmentation_models_pytorch from
+  https://huggingface.co/smp-hub/resnet18.imagenet (license field "other"; first published by torchvision,
+  BSD-3-Clause code). Trained on ImageNet (Deng et al., 2009), whose images are under the ImageNet terms of access
+  (non-commercial research). The released HoldPoint checkpoint (v0.1-unet) is fine-tuned from these weights.
+
 ## Software
 - segmentation_models_pytorch (MIT)
 - PyTorch, torchvision (BSD-style)

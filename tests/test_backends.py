@@ -192,3 +192,21 @@ def test_vlm_result_rejects_off_vocabulary():
 def test_unknown_backend():
     with pytest.raises(ValueError):
         get_backend("cuda")
+
+
+def test_checkpoint_loads_with_weights_only(tmp_path):
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("segmentation_models_pytorch")
+    from holdpoint.vision.common import load_checkpoint_dict
+
+    w = tmp_path / "ck.pt"
+    torch.save({"state_dict": {"x": torch.zeros(1)}, "meta": {"torch": torch.__version__}}, w)  # old-style meta
+    assert load_checkpoint_dict(w)["meta"]["torch"] == str(torch.__version__)
+
+    class Evil:
+        def __reduce__(self):
+            return (print, ("ran",))
+
+    torch.save({"meta": Evil()}, w)
+    with pytest.raises(Exception):
+        load_checkpoint_dict(w)

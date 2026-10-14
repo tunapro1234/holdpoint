@@ -32,7 +32,7 @@ def load_checkpoint(path: Path, device):
     """Rebuild the model a training script saved. Returns (net, meta)."""
     import torch
 
-    ck = torch.load(path, map_location="cpu", weights_only=False)
+    ck = common.load_checkpoint_dict(path)
     meta = ck.get("meta", {})
     if meta.get("task") == "segment":
         from .train_seg import build_model
