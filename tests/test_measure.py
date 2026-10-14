@@ -119,3 +119,13 @@ def test_make_card_pdf(tmp_path):
     page = PdfReader(str(out)).pages[0]
     assert float(page.mediabox.width) == pytest.approx(595.27, abs=1)  # A4
     assert "100%" in page.extract_text()
+
+
+def test_make_card_has_reference_lines(tmp_path):
+    from pypdf import PdfReader
+
+    from tools.make_card import REF_LINES_MM, make_card
+
+    text = PdfReader(str(make_card(tmp_path / "card.pdf"))).pages[0].extract_text()
+    for w in REF_LINES_MM:
+        assert f"{w:.1f} mm" in text

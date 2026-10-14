@@ -1,4 +1,5 @@
-"""Printable A4 scale card: one 50 mm DICT_4X4_50 marker, a 100 mm ruler with 10 mm lines, print warning.
+"""Printable A4 scale card: one 50 mm DICT_4X4_50 marker, a 100 mm ruler with 10 mm lines, print warning,
+and printed reference lines of known nominal width (REF_LINES_MM) for checking the width measurement.
 
     python tools/make_card.py [out.pdf] [--id 0]
 """
@@ -18,6 +19,7 @@ from reportlab.pdfgen import canvas
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from holdpoint.measure.aruco import ARUCO_DICT, MARKER_MM  # noqa: E402
 
+REF_LINES_MM = (0.2, 0.3, 0.5, 1.0, 2.0)
 WARNING = "PRINT AT 100% (actual size, no fit-to-page). The black square must measure 50 mm."
 
 
@@ -65,6 +67,16 @@ def make_card(out: str | Path, marker_id: int = 0) -> Path:
     c.drawString(rx + 101 * mm, ry - 4 * mm, "mm")
     c.setFont("Helvetica", 9)
     c.drawString(20 * mm, ry - 14 * mm, "Check after printing: ruler 0-100 must measure 100 mm. If not, reprint at 100%.")
+
+    # reference lines: nominal widths, 40 mm long; the printed width depends on the printer
+    c.drawString(20 * mm, ry - 26 * mm, "Reference lines (nominal width; printers spread ink, check with a crack gauge):")
+    c.setFont("Helvetica", 8)
+    for k, w in enumerate(REF_LINES_MM):
+        ly = ry - (36 + 10 * k) * mm
+        c.setLineWidth(w * mm)
+        c.setLineCap(0)
+        c.line(rx + 15 * mm, ly, rx + 55 * mm, ly)
+        c.drawString(rx, ly - 1 * mm, f"{w:.1f} mm")
     c.showPage()
     c.save()
     return out
