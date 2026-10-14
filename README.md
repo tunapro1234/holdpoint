@@ -10,7 +10,8 @@
 **Measured so far.** Crack segmentation on 68 held-out photos (Özgenel set): UNet IoU 0.573 ± 0.006 over four
 seeds, against 0.268 for a classical black-hat + Otsu baseline on the same photos and view. Inference speed on an
 NVIDIA RTX 3060: 87.5 images/s at batch 1 (512 px). **Nothing has run on AMD hardware yet**; steps 4 and 5 below
-need a model endpoint that is not live yet. Width in mm has not been checked against a crack gauge.
+need a model endpoint that is not live yet. Width in mm has only been checked against a crack ruler with
+human-drawn masks (see Limits).
 
 ## What it does
 1. A phone photo of a concrete element, with a printed ArUco scale card in view, goes in.
@@ -154,8 +155,13 @@ tool is missing) and the git commit.
 ## Limits
 - **Training data is not precast concrete.** SDNET2018 and Özgenel are bridge decks, walls, pavements and campus
   buildings. Accuracy on factory panels, form-oil stains and curing marks is unknown until such photos are tested.
-- **Width has not been checked against a crack gauge on real cracks.** The geometry is tested on drawn images
-  with known widths; that tests the measurement code, not the crack detector.
+- **Width against a crack ruler on real cracks: first check, measurement code only.** On a public field set
+  (Virginia Tech Crack Quantification ROIs, CC BY 4.0: 15 cracks, 3 distances, ruler readings 0.15-8.5 mm at
+  5 points each) the published photos have the scale markers cropped out, so the crop size was fitted on 5 cracks
+  and all numbers come from the other 10. With the human-drawn masks, the local band holds the ruler value at
+  67% of 147 points (77% for 0.5-2 mm, 56% for 2 mm and above, which read low by 0.78 mm on average;
+  `results/vt-ruler-gt.json`). Only 3 points are under 0.5 mm. The same check with the UNet's own masks has not
+  run yet, and the scale card has not been part of any real-crack test.
 - The printed scale card has not yet been tested with real phone photos.
 - Cracks a few pixels wide are not measured; the app says "measure with a gauge".
 - The bundled `examples/example-*` are **drawn** images (synthetic texture, drawn line, drawn card). Their results

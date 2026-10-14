@@ -1,7 +1,7 @@
 # Attribution
 
 ## Datasets
-All three are published under **CC BY 4.0** (https://creativecommons.org/licenses/by/4.0/). They are downloaded by
+All four are published under **CC BY 4.0** (https://creativecommons.org/licenses/by/4.0/). The first three are downloaded by
 `data/download.py` into `data/raw/` and are not committed to this repository. Changes we make: images are resized
 and cut into patches for training, and weak "pseudo masks" are derived from image-level labels
 (`holdpoint/vision/pseudo_mask.py`). None of the authors endorse this project.
@@ -17,6 +17,10 @@ and cut into patches for training, and weak "pseudo masks" are derived from imag
 - **Concrete Crack Images for Classification**: Özgenel, Ç. F. (2019). Mendeley Data, V2.
   https://doi.org/10.17632/5y9wdsg2zt.2. License: CC BY 4.0. 40,000 patches (227 x 227 px), half with cracks.
   Second source for the crack / no-crack classifier.
+- **Crack Quantification ROIs Dataset**: Pradhan and Sarlo, Virginia Tech data repository.
+  https://doi.org/10.7294/29361029. License: CC BY 4.0 (the repository record also says CC0). 15 field cracks
+  photographed from 0.5, 0.75 and 1.0 m, with crack-ruler widths at 5 points each. Used only to evaluate the width
+  measurement (`tools/eval_vt.py`); not used for training. Not committed; download it from the DOI.
 
 ## Pre-trained weights
 - ResNet-18 ImageNet encoder weights, loaded through segmentation_models_pytorch from
