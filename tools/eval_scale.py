@@ -40,6 +40,7 @@ def main(argv=None) -> int:
     ap.add_argument("--sides", default="341,512,768,1024")
     ap.add_argument("--ref", type=int, default=1024, help="long side the truth mask is compared at")
     ap.add_argument("--limit", type=int, default=0, help="first N images only (smoke test)")
+    ap.add_argument("--note", default=None, help="free-text note stored in the output")
     ap.add_argument("--out", type=Path)
     a = ap.parse_args(argv)
 
@@ -76,7 +77,7 @@ def main(argv=None) -> int:
     chosen = max(rows, key=lambda r: r["iou"])["side"]
     test = measure(load("test"), chosen, "test") if a.final_test and a.part != "test" else None
     out = {"checkpoint": str(a.ckpt), "selected_on": a.part, "ref_long_side": a.ref, "threshold": 0.5,
-           "by_side": rows, "chosen_side": chosen, "test_at_chosen_side": test,
+           "by_side": rows, "chosen_side": chosen, "test_at_chosen_side": test, "note": a.note,
            "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
            "command": "python tools/eval_scale.py " + " ".join(argv if argv is not None else sys.argv[1:])}
     if a.out:
