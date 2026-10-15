@@ -125,3 +125,27 @@ def test_inspect_real_photo_example_is_labelled_real():
     text = all_text(at)
     assert "computed on CPU" in text and "unet-resnet18" in text
     assert any(m.label == "Crack width" for m in at.metric)
+
+
+RESULTS = Path(__file__).resolve().parents[1] / "results"
+
+
+@pytest.mark.skipif(not (RESULTS / "vt-side-select.json").is_file(), reason="ruler check results not in results/")
+def test_data_limits_ruler_check_read_from_results(isolated):
+    for name in ("vt-side-select.json", "vt-ruler-gt.json"):
+        if (RESULTS / name).is_file():
+            (isolated / "results" / name).write_text((RESULTS / name).read_text())
+    sel = json.loads((RESULTS / "vt-side-select.json").read_text())["test_at_chosen_side"]
+    text = all_text(run("pages/5_Data_and_limits.py"))
+    mid = sel["ruler 0.5-2 mm"]
+    row = next(ln for ln in text.splitlines() if ln.startswith(f"| 0.5-2 mm | {mid['n']} |"))
+    assert f"| {mid['coverage'] * 100:.0f}% |" in row  # UNet coverage for 0.5-2 mm, as in the file
+    assert "not usable, check with a gauge" in text
+    assert "scale card was not part of this test" in text
+    assert "0.156 mm on the width pass" in text and "not measured**" not in text
+
+
+def test_data_limits_without_ruler_results_says_not_measured():
+    text = all_text(run("pages/5_Data_and_limits.py"))
+    assert "Width against a crack ruler on real cracks: not measured" in text
+    assert "examples/ozgenel-test-*" in text and "458 photos" in text
