@@ -93,7 +93,8 @@ def main(argv=None) -> dict:
     ap.add_argument("--images", type=Path, required=True)
     ap.add_argument("--list", type=Path, help="file with paths relative to --images (e.g. a split file)")
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--side", type=int, default=1024, help="long side the photo is resized to for the UNet")
+    ap.add_argument("--side", type=int, default=512, help="long side the photo is resized to for the UNet "
+                    "(512 chosen on val, results/seg-scale.json)")
     ap.add_argument("--device", default="auto")
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)

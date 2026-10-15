@@ -1,0 +1,82 @@
+{
+  "schema": "holdpoint-bench/1",
+  "provenance": {
+    "backend": "bench:unet",
+    "device": "Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz",
+    "model": "unet-resnet18",
+    "timestamp": "2026-10-14T20:29:33+00:00",
+    "command": "python bench/bench.py --backend unet --checkpoint runs/seg-gpu-1/model.pt --images data/raw/ozgenel_seg/extracted/rgb --limit 32 --batches 1,8 --warmup 2 --iters 10 --device cpu --threads 4",
+    "git": "afdd22f",
+    "label": "computed on Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz, 2026-10-14T20:29:33+00:00, python bench/bench.py --backend unet --checkpoint runs/seg-gpu-1/model.pt --images data/raw/ozgenel_seg/extracted/rgb --limit 32 --batches 1,8 --warmup 2 --iters 10 --device cpu --threads 4"
+  },
+  "device": {
+    "type": "cpu",
+    "name": "Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz",
+    "torch": "2.14.1+cpu",
+    "rocm": "not available",
+    "python": "3.12.3",
+    "host_cpu": "Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz",
+    "torch_threads": 4
+  },
+  "amd_smi": "not available",
+  "git": {
+    "commit": "afdd22f",
+    "dirty": false
+  },
+  "backend": "unet",
+  "model": {
+    "name": "unet-resnet18",
+    "weights": "trained",
+    "checkpoint": "model.pt",
+    "sha256": "1a992634324e9ef8b4fedb8e4495ea056c872eee0f8f09c46f774af60865b6a7",
+    "parameters": 14328209
+  },
+  "images": {
+    "folder": "data/raw/ozgenel_seg/extracted/rgb",
+    "count": 32,
+    "input_side": 512,
+    "preprocessing": "short side resized to input_side, center crop (not timed)",
+    "sha256_of_file_hashes": "ba16f3701b1beef8f0761d8ddb8aaeb1816b794a1387fb00fc1c5808cff5c8f9"
+  },
+  "settings": {
+    "batches": [
+      1,
+      8
+    ],
+    "warmup": 2,
+    "iters": 10,
+    "precision": "fp32",
+    "batching": "one forward per batch",
+    "timed": "host-to-device copy, forward, device-to-host copy of the output"
+  },
+  "rows": [
+    {
+      "batch": 1,
+      "iterations": 10,
+      "warmup": 2,
+      "images_timed": 10,
+      "img_per_s": 0.818,
+      "p50_ms": 1149.063,
+      "p95_ms": 1510.993,
+      "p50_ms_per_image": 1149.063,
+      "mean_ms": 1221.882
+    },
+    {
+      "batch": 8,
+      "iterations": 10,
+      "warmup": 2,
+      "images_timed": 80,
+      "img_per_s": 0.748,
+      "p50_ms": 9898.668,
+      "p95_ms": 15377.4,
+      "p50_ms_per_image": 1237.334,
+      "mean_ms": 10699.366
+    }
+  ],
+  "cost": {
+    "price_per_hour_usd": null,
+    "source": null,
+    "usd_per_1000_images": null,
+    "note": "no price given (--price-per-hour and --price-source)"
+  }
+}

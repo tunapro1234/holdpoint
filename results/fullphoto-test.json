@@ -1,0 +1,137 @@
+{
+  "checkpoint": "runs/seg-gpu-1/model.pt",
+  "part": "test",
+  "ref_long_side": 1024,
+  "threshold": 0.5,
+  "view": "whole photo, method input at long side <side>, mask resized back, scored at long side 1024",
+  "excluded": [
+    "276.jpg",
+    "283.jpg",
+    "516.JPG"
+  ],
+  "rows": [
+    {
+      "method": "unet",
+      "side": 341,
+      "all": {
+        "precision": 0.7191594299373657,
+        "recall": 0.8413056707859157,
+        "f1": 0.7754520191768942,
+        "accuracy": 0.9933077681298349,
+        "iou": 0.6332557248231776,
+        "tp": 617955,
+        "fp": 241319,
+        "fn": 116564,
+        "tn": 52501538,
+        "mean_image_iou": 0.6397972300627572,
+        "n": 68
+      },
+      "without_excluded": {
+        "precision": 0.7169895899568542,
+        "recall": 0.8376927882911667,
+        "f1": 0.7726555818604386,
+        "accuracy": 0.9932239434657952,
+        "iou": 0.629534440733147,
+        "tp": 588604,
+        "fp": 232334,
+        "fn": 114045,
+        "tn": 50183097,
+        "mean_image_iou": 0.636657646133223,
+        "n": 65
+      }
+    },
+    {
+      "method": "classical",
+      "side": 341,
+      "all": {
+        "precision": 0.5732086930860837,
+        "recall": 0.24593645637485212,
+        "f1": 0.34419520114017216,
+        "accuracy": 0.9871277154660693,
+        "iou": 0.2078718465951916,
+        "tp": 180645,
+        "fp": 134502,
+        "fn": 553874,
+        "tn": 52608355,
+        "mean_image_iou": 0.1748864620562866,
+        "n": 68
+      },
+      "without_excluded": {
+        "precision": 0.5761011337413464,
+        "recall": 0.24515796649536256,
+        "f1": 0.34394938796536545,
+        "accuracy": 0.9871446854028947,
+        "iou": 0.20769255810532686,
+        "tp": 172260,
+        "fp": 126750,
+        "fn": 530389,
+        "tn": 50288681,
+        "mean_image_iou": 0.1732702737324811,
+        "n": 65
+      }
+    },
+    {
+      "method": "unet",
+      "side": 512,
+      "all": {
+        "precision": 0.8039498380710565,
+        "recall": 0.8199025484704957,
+        "f1": 0.8118478336331645,
+        "accuracy": 0.9947801290773878,
+        "iou": 0.6832860778393858,
+        "tp": 602234,
+        "fp": 146860,
+        "fn": 132285,
+        "tn": 52595997,
+        "mean_image_iou": 0.7019556019300892,
+        "n": 68
+      },
+      "without_excluded": {
+        "precision": 0.8017142793232357,
+        "recall": 0.8161329483141654,
+        "f1": 0.8088593623826197,
+        "accuracy": 0.9946980598645333,
+        "iou": 0.6790628552482001,
+        "tp": 573455,
+        "fp": 141831,
+        "fn": 129194,
+        "tn": 50273600,
+        "mean_image_iou": 0.6987641533149108,
+        "n": 65
+      }
+    },
+    {
+      "method": "classical",
+      "side": 512,
+      "all": {
+        "precision": 0.5812267359909519,
+        "recall": 0.3750045948437004,
+        "f1": 0.4558785925835818,
+        "accuracy": 0.987704501432531,
+        "iou": 0.29523494097937897,
+        "tp": 275448,
+        "fp": 198460,
+        "fn": 459071,
+        "tn": 52544397,
+        "mean_image_iou": 0.27516412747393687,
+        "n": 68
+      },
+      "without_excluded": {
+        "precision": 0.5775409646176191,
+        "recall": 0.3689921995192479,
+        "f1": 0.4502919050724531,
+        "accuracy": 0.9876163384853265,
+        "iou": 0.29056562751806847,
+        "tp": 259272,
+        "fp": 189652,
+        "fn": 443377,
+        "tn": 50225779,
+        "mean_image_iou": 0.269714279184868,
+        "n": 65
+      }
+    }
+  ],
+  "note": "reporting only; the app's side was selected on val in results/seg-scale.json",
+  "created": "2026-10-15T18:32:26+00:00",
+  "command": "python tools/eval_fullphoto.py --ckpt runs/seg-gpu-1/model.pt --exclude results/near-dupes-test.json --out results/fullphoto-test.json"
+}

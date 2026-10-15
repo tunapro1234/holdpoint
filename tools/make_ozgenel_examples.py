@@ -3,7 +3,7 @@
 The photos come from the Ozgenel crack segmentation set (CC BY 4.0, see ATTRIBUTION), test split only, so the model
 never saw them in training or model selection. Near duplicates of training photos (results/near-dupes-test.json)
 are skipped. The first --n remaining test photos in split order are used, not hand-picked ones.
-Each photo is stored at long side --side; its result carries its own provenance and the IoU against the real mask.
+Each photo is stored at long side --side and segmented at the app default (--unet-side); its result carries its own provenance and the IoU against the real mask.
 The photos have no scale card, so the app reports widths in pixels only.
 
     python tools/make_ozgenel_examples.py --ckpt runs/seg-gpu-1/model.pt
@@ -38,7 +38,8 @@ def main(argv=None) -> int:
     ap.add_argument("--splits", type=Path, default=Path("data/splits/ozgenel_seg"))
     ap.add_argument("--dupes", type=Path, default=Path("results/near-dupes-test.json"))
     ap.add_argument("--n", type=int, default=4)
-    ap.add_argument("--side", type=int, default=1024)
+    ap.add_argument("--side", type=int, default=1024, help="long side the photo is stored at")
+    ap.add_argument("--unet-side", type=int, default=None, help="UNet input long side; default = the app's")
     ap.add_argument("--examples", type=Path, default=Path("examples"))
     a = ap.parse_args(argv)
     cmd = "python tools/make_ozgenel_examples.py " + " ".join(argv if argv is not None else sys.argv[1:])
@@ -46,7 +47,7 @@ def main(argv=None) -> int:
     drop = set(json.loads(a.dupes.read_text())["near_duplicates"]) if a.dupes.exists() else set()
     items = [it for it in real_items(a.root, common.read_split_list(a.splits, "test")) if Path(it[0]).name not in drop]
     ckpt_sha = hashlib.sha256(a.ckpt.read_bytes()).hexdigest()
-    be = CpuBackend(weights=a.ckpt, side=a.side)
+    be = CpuBackend(weights=a.ckpt, side=a.unet_side)
     rec_p, idx_p = a.examples / "recorded.json", a.examples / "index.json"
     rec, index = json.loads(rec_p.read_text()), json.loads(idx_p.read_text())
     for old in a.examples.glob(PREFIX + "*.jpg"):
@@ -67,7 +68,7 @@ def main(argv=None) -> int:
         iou = common.prf(*c)["iou"]
         when = datetime.now(timezone.utc).isoformat(timespec="seconds")
         prov = {"recorded_backend": "cpu", "device": f"cpu ({platform.machine()})", "model": seg.provenance["model"],
-                "checkpoint_sha256": ckpt_sha, "timestamp": when, "command": cmd, "synthetic": False,
+                "checkpoint_sha256": ckpt_sha, "unet_side": be.side, "timestamp": when, "command": cmd, "synthetic": False,
                 "note": "Real photo from the Ozgenel set (CC BY 4.0), held-out test split. UNet trained on "
                         "NVIDIA RTX 3060, run here on CPU. Not computed on AMD.",
                 "label": f"computed on CPU, {when}, {cmd}"}

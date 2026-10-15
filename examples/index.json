@@ -43,7 +43,7 @@
   "original": "018.jpg",
   "license": "CC BY 4.0",
   "card": false,
-  "iou_vs_real_mask": 0.605
+  "iou_vs_real_mask": 0.4462
  },
  {
   "file": "ozgenel-test-034.jpg",
@@ -53,7 +53,7 @@
   "original": "034.jpg",
   "license": "CC BY 4.0",
   "card": false,
-  "iou_vs_real_mask": 0.8135
+  "iou_vs_real_mask": 0.7526
  },
  {
   "file": "ozgenel-test-037.jpg",
@@ -63,7 +63,7 @@
   "original": "037.jpg",
   "license": "CC BY 4.0",
   "card": false,
-  "iou_vs_real_mask": 0.7182
+  "iou_vs_real_mask": 0.7011
  },
  {
   "file": "ozgenel-test-048.jpg",
@@ -73,6 +73,6 @@
   "original": "048.jpg",
   "license": "CC BY 4.0",
   "card": false,
-  "iou_vs_real_mask": 0.7448
+  "iou_vs_real_mask": 0.6836
  }
 ]
