@@ -74,6 +74,16 @@ def test_thin_crack_is_flagged_resolution_limited():
     assert r.status == MEASURED and r.resolution_limited and "gauge" in r.reason
 
 
+def test_resolution_flag_uses_the_model_input_pixel():
+    img, mask = plane_scene(1.0)
+    scale = detect_scale(img)
+    assert not measure_width(mask, scale).resolution_limited
+    # the same mask, but predicted on an input where one pixel was 0.5 mm: 1 mm is only 2 input pixels
+    r = measure_width(mask, scale, source_mm_per_px=0.5)
+    assert r.resolution_limited and "gauge" in r.reason
+    assert r.band_mm == measure_width(mask, scale).band_mm  # the band itself does not change
+
+
 def test_scale_mm_per_px_head_on():
     img, _ = plane_scene(2.0)
     s = detect_scale(img)

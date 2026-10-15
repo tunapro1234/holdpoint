@@ -96,7 +96,9 @@ def inspect(img: np.ndarray, backend: Backend, table: ThresholdTable, element_cl
             wmask, prov["width_segment"] = wseg.mask & ~card, wseg.provenance
         except (NotImplementedError, KeyError):
             pass
-    width = measure_width(mask if wmask is None else wmask, scale, calib_rel_err=calib_rel_err)
+    source_mm = None if wmask is None else scale.mm_per_px * max(img.shape[:2]) / side
+    width = measure_width(mask if wmask is None else wmask, scale, calib_rel_err=calib_rel_err,
+                          source_mm_per_px=source_mm)
     sug = suggest(width.band_mm, element_class, table, resolution_limited=width.resolution_limited)
     try:
         cls = backend.classify(img)

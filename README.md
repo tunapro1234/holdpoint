@@ -198,7 +198,8 @@ tool is missing) and the git commit.
     now uses its own pass.
   - The scale card has not been part of any real-crack test.
 - The printed scale card has not yet been tested with real phone photos.
-- Cracks a few pixels wide are not measured; the app says "measure with a gauge".
+- Cracks under 3 pixels wide are not judged; the app says "measure with a gauge". The pixel counted is the
+  model input pixel (0.156 mm on the width pass), not the phone's, because the mask cannot be finer than that.
 - The bundled `examples/example-*` are **drawn** images (synthetic texture, drawn line, drawn card). Their results
   come from the classical CPU fallback and are labelled as synthetic in the app. Its width ranges are wide
   (example 1: 0.06-1.44 mm for a drawn 0.6-1.2 mm line).

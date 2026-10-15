@@ -97,11 +97,14 @@ def rectify_mask(mask: np.ndarray, scale: Scale) -> tuple[np.ndarray, float]:
 
 
 def measure_width(mask: np.ndarray, scale: Scale | None, calib_rel_err: float = 0.03,
-                  lo_pct: float = 10.0, hi_pct: float = 90.0, min_samples: int = 10) -> WidthResult:
+                  lo_pct: float = 10.0, hi_pct: float = 90.0, min_samples: int = 10,
+                  source_mm_per_px: float | None = None) -> WidthResult:
     """Width band in mm for the cracks in `mask`.
 
     calib_rel_err: relative scale uncertainty (card print error, corner localisation, out-of-plane surface);
     the band is widened by it on both sides.
+    source_mm_per_px: size of one pixel of the image the mask was predicted on, when that was smaller than the
+    photo (a resized model input). A crack is only resolved if it spans MIN_RESOLVED_PX of THOSE pixels.
     """
     if scale is None:
         return WidthResult(status=NOT_MEASURABLE, reason="no scale card in view")
@@ -114,7 +117,8 @@ def measure_width(mask: np.ndarray, scale: Scale | None, calib_rel_err: float = 
         return WidthResult(status=NOT_MEASURABLE, mm_per_px=res_mm,
                            reason=f"too few skeleton samples ({w_px.size})")
     err = calib_rel_err
-    limited = bool(np.median(w_px) < MIN_RESOLVED_PX)
+    eff_mm = max(res_mm, source_mm_per_px or 0.0)
+    limited = bool(np.median(w_px) * res_mm < MIN_RESOLVED_PX * eff_mm)
     lo = (np.percentile(w_px, lo_pct) - QUANT_PX) * res_mm * (1 - err)
     hi = (np.percentile(w_px, hi_pct) + QUANT_PX) * res_mm * (1 + err)
     return WidthResult(

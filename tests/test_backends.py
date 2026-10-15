@@ -177,8 +177,8 @@ def _fake_pipeline(monkeypatch, backend):
 
     seen = {}
 
-    def fake_measure(mask, scale, calib_rel_err):
-        seen["mask"] = mask
+    def fake_measure(mask, scale, calib_rel_err, source_mm_per_px):
+        seen["mask"], seen["source_mm"] = mask, source_mm_per_px
         return SimpleNamespace(band_mm=None, resolution_limited=False)
 
     monkeypatch.setattr(pipeline, "detect_scale", lambda img: SimpleNamespace(mm_per_px=0.2, corners_px=None))
@@ -186,6 +186,7 @@ def _fake_pipeline(monkeypatch, backend):
     monkeypatch.setattr(pipeline, "measure_width", fake_measure)
     monkeypatch.setattr(pipeline, "suggest", lambda *a, **k: None)
     insp = pipeline.inspect(np.zeros((30, 40, 3), np.uint8), backend, None, "x")
+    _fake_pipeline.source_mm = seen["source_mm"]
     return insp, seen["mask"]
 
 
@@ -199,7 +200,8 @@ def test_inspect_measures_width_on_the_width_pass(monkeypatch):
                          vlm_check=lambda crop: (_ for _ in ()).throw(NotImplementedError()))
     insp, measured = _fake_pipeline(monkeypatch, be)
     assert measured.all() and not insp.mask.any() and insp.width_mask.all()
-    assert insp.provenance["width_segment"]["input_side"] == 40  # 40 * 0.2 / 0.156 > 40, capped at the photo
+    assert insp.provenance["width_segment"]["input_side"] == 40  # 40 * 0.2 / 0.1555 > 40, capped at the photo
+    assert _fake_pipeline.source_mm == pytest.approx(0.2)  # no downscale: the photo's own pixel size
 
 
 def test_inspect_falls_back_to_display_mask_without_segment_at(monkeypatch):
