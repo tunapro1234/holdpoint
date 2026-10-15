@@ -81,6 +81,11 @@ class Backend(ABC):
     @abstractmethod
     def provenance(self) -> dict: ...
 
+    def segment_at(self, img: np.ndarray, side: int) -> SegmentResult:
+        """Mask with the photo resized to long side `side` first. Backends without a resolution knob do not
+        implement it; the pipeline then measures width on the `segment` mask."""
+        raise NotImplementedError
+
 
 def to_gray(img: np.ndarray) -> np.ndarray:
     """uint8 grayscale from HxW or HxWx3/4 (RGB) input."""

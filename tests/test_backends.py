@@ -141,6 +141,82 @@ def test_cpu_unet_resizes_to_side_and_back(tmp_path):
     assert seen == [(64, 64)]  # long side 200 -> 64, short side 38 padded to 64
 
 
+
+def test_cpu_segment_at_uses_given_side_and_reports_it(tmp_path):
+    torch = pytest.importorskip("torch")
+    smp = pytest.importorskip("segmentation_models_pytorch")
+    net = smp.Unet(encoder_name="resnet18", encoder_weights=None, in_channels=3, classes=1)
+    w = tmp_path / "unet.pt"
+    torch.save(net.state_dict(), w)
+    seen = []
+    be = get_backend("cpu", weights=w, side=64)
+    be._unet().register_forward_hook(lambda m, i, o: seen.append(tuple(i[0].shape[-2:])))
+    seg = be.segment_at(crack_image(120, 200), 128)
+    assert seg.mask.shape == (120, 200) and seen == [(96, 128)]
+    assert seg.provenance["input_side"] == 128
+
+
+def test_cpu_segment_at_without_unet_is_not_implemented(monkeypatch):
+    monkeypatch.delenv("HOLDPOINT_UNET_WEIGHTS", raising=False)
+    with pytest.raises(NotImplementedError):
+        get_backend("cpu").segment_at(crack_image(50, 70), 64)
+
+
+# -- pipeline: width pass ------------------------------------------------------
+
+def test_width_input_side_targets_mm_per_px_and_never_upsamples():
+    from holdpoint.pipeline import WIDTH_MM_PER_INPUT_PX, width_input_side
+
+    assert width_input_side((3000, 4000, 3), None) is None
+    assert width_input_side((3000, 4000, 3), SimpleNamespace(mm_per_px=0.1)) == round(4000 * 0.1 / WIDTH_MM_PER_INPUT_PX)
+    assert width_input_side((300, 400, 3), SimpleNamespace(mm_per_px=1.0)) == 400
+
+
+def _fake_pipeline(monkeypatch, backend):
+    from holdpoint import pipeline
+
+    seen = {}
+
+    def fake_measure(mask, scale, calib_rel_err):
+        seen["mask"] = mask
+        return SimpleNamespace(band_mm=None, resolution_limited=False)
+
+    monkeypatch.setattr(pipeline, "detect_scale", lambda img: SimpleNamespace(mm_per_px=0.2, corners_px=None))
+    monkeypatch.setattr(pipeline, "card_exclusion", lambda shape, scale: np.zeros(shape, bool))
+    monkeypatch.setattr(pipeline, "measure_width", fake_measure)
+    monkeypatch.setattr(pipeline, "suggest", lambda *a, **k: None)
+    insp = pipeline.inspect(np.zeros((30, 40, 3), np.uint8), backend, None, "x")
+    return insp, seen["mask"]
+
+
+def test_inspect_measures_width_on_the_width_pass(monkeypatch):
+    from holdpoint.backends.base import SegmentResult
+
+    display, wide = np.zeros((30, 40), bool), np.ones((30, 40), bool)
+    be = SimpleNamespace(segment=lambda img: SegmentResult(mask=display, provenance={"step": "display"}),
+                         segment_at=lambda img, side: SegmentResult(mask=wide, provenance={"input_side": side}),
+                         classify=lambda img: (_ for _ in ()).throw(NotImplementedError()),
+                         vlm_check=lambda crop: (_ for _ in ()).throw(NotImplementedError()))
+    insp, measured = _fake_pipeline(monkeypatch, be)
+    assert measured.all() and not insp.mask.any() and insp.width_mask.all()
+    assert insp.provenance["width_segment"]["input_side"] == 40  # 40 * 0.2 / 0.156 > 40, capped at the photo
+
+
+def test_inspect_falls_back_to_display_mask_without_segment_at(monkeypatch):
+    from holdpoint.backends.base import SegmentResult
+
+    display = np.ones((30, 40), bool)
+
+    def no_side(img, side):
+        raise NotImplementedError
+
+    be = SimpleNamespace(segment=lambda img: SegmentResult(mask=display, provenance={}), segment_at=no_side,
+                         classify=lambda img: (_ for _ in ()).throw(NotImplementedError()),
+                         vlm_check=lambda crop: (_ for _ in ()).throw(NotImplementedError()))
+    insp, measured = _fake_pipeline(monkeypatch, be)
+    assert measured.all() and insp.width_mask is None and "width_segment" not in insp.provenance
+
+
 # -- amd_vllm -------------------------------------------------------------------
 
 def test_amd_vllm_needs_base_url(monkeypatch):

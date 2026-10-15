@@ -25,3 +25,11 @@ def test_summarize_coverage():
     s = summarize(rows)
     assert s["all"]["found"] == 2 and s["all"]["coverage"] == 0.5
     assert s["ruler >=2 mm"]["bias_mm"] == -1.5
+
+
+def test_side_select_rule_prefers_coverage_then_mae():
+    from tools.vt_side_select import choose
+
+    assert choose({512: {"coverage": 0.30, "mae_mm": 1.0}, 1536: {"coverage": 0.54, "mae_mm": 1.1}}) == 1536
+    # within 0.02 of the best coverage: lower error wins
+    assert choose({1024: {"coverage": 0.53, "mae_mm": 0.9}, 1536: {"coverage": 0.54, "mae_mm": 1.1}}) == 1024

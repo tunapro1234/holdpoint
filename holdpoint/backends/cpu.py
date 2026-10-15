@@ -30,8 +30,9 @@ class CpuBackend(Backend):
         w = weights or os.environ.get("HOLDPOINT_UNET_WEIGHTS")
         self.weights = Path(w) if w else None
         self.encoder = encoder
-        # long side the photo is resized to for the UNet (trained on 256 px crops; full-size photos are off-scale)
-        self.side = side or int(os.environ.get("HOLDPOINT_UNET_SIDE", "1024"))
+        # long side the photo is resized to for the UNet (trained on 256 px crops; full-size photos are off-scale).
+        # 512 was chosen on the val split (results/seg-scale.json).
+        self.side = side or int(os.environ.get("HOLDPOINT_UNET_SIDE", "512"))
         self._net = None  # loaded lazily
         self._norm = None  # (mean, std) from the checkpoint, if it has them
 
@@ -74,6 +75,13 @@ class CpuBackend(Backend):
         net = self._unet()
         mask = _unet_mask(net, img, norm=self._norm, side=self.side) if net is not None else baseline_mask(img)
         return SegmentResult(mask=mask, provenance=self.provenance())
+
+    def segment_at(self, img: np.ndarray, side: int) -> SegmentResult:
+        net = self._unet()
+        if net is None:
+            raise NotImplementedError("the classical fallback has no input size")
+        mask = _unet_mask(net, img, norm=self._norm, side=side)
+        return SegmentResult(mask=mask, provenance={**self.provenance(), "input_side": side})
 
     def classify(self, img: np.ndarray) -> ClassifyResult:
         # Without a trained classifier, p is the masked-area share squashed to [0, 1]; provenance names the method.

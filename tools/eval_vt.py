@@ -14,7 +14,7 @@ At each point: skeleton pixels of the mask within --radius-mm of (X, Y) -> local
 (p10 - 0.5 px, p90 + 0.5 px) * mm/px. Masks: ground truth (measurement code alone) and, with --ckpt, the UNet.
 
     python tools/eval_vt.py --root ../indirilen/vt-crackroi/Dataset --out results/vt-ruler-gt.json
-    python tools/eval_vt.py --root ... --ckpt runs/seg-gpu-1/model.pt --side 1024 --out results/vt-ruler-unet.json
+    python tools/eval_vt.py --root ... --ckpt runs/seg-gpu-1/model.pt --side 512 --out results/vt-ruler-unet.json
 """
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from holdpoint.measure.width import QUANT_PX  # noqa: E402
 
 CLASSES = ((0.0, 0.5, "<0.5 mm"), (0.5, 2.0, "0.5-2 mm"), (2.0, 99.0, ">=2 mm"))
+LIMITS_MM = (0.2, 0.3, 0.4)  # the example threshold table (config/thresholds.example.yaml), not a standard
 
 
 def read_points(csv_path: Path) -> list[dict]:
@@ -70,7 +71,7 @@ def local_band_px(yx: np.ndarray, w: np.ndarray, x: int, y: int, radius_px: floa
             float(np.median(near)))
 
 
-def summarize(rows: list[dict]) -> dict:
+def summarize(rows: list[dict], limits_mm: tuple[float, ...] = LIMITS_MM) -> dict:
     def block(rs):
         found = [r for r in rs if r["band_mm"] is not None]
         if not found:
@@ -81,7 +82,11 @@ def summarize(rows: list[dict]) -> dict:
                 "coverage": round(float(np.mean([r["band_mm"][0] <= r["truth_mm"] <= r["band_mm"][1] for r in found])), 3),
                 "mae_mm": round(float(np.mean(np.abs(err))), 3), "bias_mm": round(float(np.mean(err)), 3),
                 "median_rel_err": round(float(np.median(rel)), 3),
-                "band_width_median_mm": round(float(np.median([r["band_mm"][1] - r["band_mm"][0] for r in found])), 3)}
+                "band_width_median_mm": round(float(np.median([r["band_mm"][1] - r["band_mm"][0] for r in found])), 3),
+                # the error that matters: the whole band at or under a limit while the ruler reads above it
+                "band_under_limit_ruler_above": {str(lim): [sum(r["band_mm"][1] <= lim < r["truth_mm"] for r in found),
+                                                           sum(r["truth_mm"] > lim for r in found)]
+                                                  for lim in limits_mm}}
 
     out = {"all": block(rows)}
     for d in sorted({r["dist"] for r in rows}):
@@ -97,7 +102,9 @@ def main(argv=None) -> int:
     ap.add_argument("--calib", default="1,2,3,4,5", help="crack samples used only to fit the crop side S")
     ap.add_argument("--radius-mm", type=float, default=3.0)
     ap.add_argument("--ckpt", type=Path, help="UNet checkpoint; without it only ground-truth masks are measured")
-    ap.add_argument("--side", type=int, default=1024, help="UNet input long side")
+    ap.add_argument("--side", type=int, default=512, help="UNet input long side (512 chosen on val)")
+    ap.add_argument("--report-calib", action="store_true",
+                    help="also measure the UNet masks on the calibration cracks (for choosing --side without the test cracks)")
     ap.add_argument("--out", type=Path)
     a = ap.parse_args(argv)
 
@@ -122,7 +129,7 @@ def main(argv=None) -> int:
         gt = cv2.imread(str(gt_p), cv2.IMREAD_GRAYSCALE) > 127
         h, w = gt.shape
         entry = {"size": (w, h), "gt": skeleton_widths(gt)}
-        if backend is not None and s not in calib:
+        if backend is not None and (s not in calib or a.report_calib):
             rgb = cv2.cvtColor(cv2.imread(str(img_p)), cv2.COLOR_BGR2RGB)
             entry["unet"] = skeleton_widths(backend.segment(rgb).mask)
         cache[(s, d)] = entry
@@ -139,11 +146,10 @@ def main(argv=None) -> int:
             est.append(p["truth_mm"] * side_px / r[2])
     S = float(np.median(est))
 
-    results = {}
-    for kind in ["gt"] + (["unet"] if backend is not None else []):
+    def measure(kind, in_calib):
         rows = []
         for p in pts:
-            if p["sample"] in calib:
+            if (p["sample"] in calib) != in_calib:
                 continue
             e = cache[(p["sample"], p["dist"])]
             mm_px = S / float(np.mean(e["size"]))
@@ -151,7 +157,16 @@ def main(argv=None) -> int:
             rows.append({**p, "mm_per_px": round(mm_px, 5),
                          "band_mm": [round(max(r[0], 0) * mm_px, 3), round(r[1] * mm_px, 3)] if r else None,
                          "median_mm": round(r[2] * mm_px, 3) if r else None})
+        return rows
+
+    results = {}
+    for kind in ["gt"] + (["unet"] if backend is not None else []):
+        rows = measure(kind, in_calib=False)
         results[kind] = {"summary": summarize(rows), "points": rows}
+        if kind == "unet" and a.report_calib:
+            # S was fitted on these cracks with the GT masks, so the UNet's numbers here are a fair basis for choosing
+            # --side; the test cracks are not used for that choice.
+            results[kind]["calib_summary"] = summarize(measure(kind, in_calib=True))
 
     out = {"data": "Virginia Tech Crack Quantification ROIs, DOI 10.7294/29361029 (CC BY 4.0), Pradhan & Sarlo",
            "scale": {"crop_side_mm_fitted": round(S, 2), "fitted_on_samples": sorted(calib), "n_fit_points": len(est),
