@@ -51,7 +51,7 @@ def draw(rgb: np.ndarray, mask: np.ndarray, points: list[dict], width: int = 160
     out = cv2.resize(out, (width, round(out.shape[0] * k)), interpolation=cv2.INTER_AREA)
     font, scale, thick = cv2.FONT_HERSHEY_SIMPLEX, 1.3, 3
     # labels alternate below-right / above-left along the crack so neighbours do not overlap
-    for i, p in enumerate(sorted(points, key=lambda q: q["x"])):
+    for i, p in enumerate(sorted(points, key=lambda q: -q["x"])):
         x, y = round(p["x"] * k), round(p["y"] * k)
         h = held(p)
         color = GREY if h is None else (GREEN if h else RED)
@@ -64,6 +64,9 @@ def draw(rgb: np.ndarray, mask: np.ndarray, points: list[dict], width: int = 160
         y0 = y + 40 if i % 2 == 0 else y - 40 - 2 * lh
         x0 = int(min(max(x0, 8), width - tw - 16))
         y0 = int(min(max(y0, 8), out.shape[0] - 2 * lh - 16))
+        bx = min(max(x, x0), x0 + tw + 20)
+        by = min(max(y, y0), y0 + 2 * lh + 12)
+        cv2.line(out, (x, y), (bx, by), color, 3, cv2.LINE_AA)  # leader: which circle this label belongs to
         box = out[y0:y0 + 2 * lh + 12, x0:x0 + tw + 20].astype(np.float32)
         out[y0:y0 + 2 * lh + 12, x0:x0 + tw + 20] = (0.35 * box + 0.65 * np.array((25, 25, 25))).astype(np.uint8)
         for j, s in enumerate(lines):
