@@ -64,7 +64,7 @@ def make_card(out: str | Path, marker_id: int = 0) -> Path:
         c.line(x, ry, x, ry + tick)
         if i % 10 == 0:
             c.drawCentredString(x, ry - 4 * mm, f"{i}")
-    c.drawString(rx + 101 * mm, ry - 4 * mm, "mm")
+    c.drawString(rx + 104 * mm, ry - 4 * mm, "mm")
     c.setFont("Helvetica", 9)
     c.drawString(20 * mm, ry - 14 * mm, "Check after printing: ruler 0-100 must measure 100 mm. If not, reprint at 100%.")
 

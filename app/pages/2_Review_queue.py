@@ -58,7 +58,7 @@ st.subheader("Decision log")
 entries = led.entries()
 try:
     led.verify()
-    st.caption(f"{len(entries)} entries · hash chain intact")
+    st.caption(f"{len(entries)} {'entry' if len(entries) == 1 else 'entries'} · hash chain intact")
 except LedgerError as e:
     st.error(f"Hash chain broken: {e}")
 if entries:
