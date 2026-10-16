@@ -1,0 +1,53 @@
+{
+  "source": "vt-ruler-unet-1536.json",
+  "side": 1536,
+  "test_samples": [
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "rule": "holdpoint.decide.suggest on each band; resolution flag not applied",
+  "limits_note": "example values, not a standard",
+  "points": 150,
+  "band_found": 147,
+  "band_width_mm": {
+    "median": 1.674,
+    "mean": 1.807
+  },
+  "by_limit": {
+    "0.2": {
+      "repair_ruler_above": 110,
+      "repair_ruler_at_or_below": 0,
+      "accept_ruler_at_or_below": 0,
+      "accept_ruler_above": 0,
+      "gauge_ruler_above": 37,
+      "gauge_ruler_at_or_below": 0,
+      "ruler_above": 147
+    },
+    "0.3": {
+      "repair_ruler_above": 76,
+      "repair_ruler_at_or_below": 2,
+      "accept_ruler_at_or_below": 0,
+      "accept_ruler_above": 1,
+      "gauge_ruler_above": 67,
+      "gauge_ruler_at_or_below": 1,
+      "ruler_above": 144
+    },
+    "0.4": {
+      "repair_ruler_above": 53,
+      "repair_ruler_at_or_below": 2,
+      "accept_ruler_at_or_below": 0,
+      "accept_ruler_above": 2,
+      "gauge_ruler_above": 89,
+      "gauge_ruler_at_or_below": 1,
+      "ruler_above": 144
+    }
+  }
+}

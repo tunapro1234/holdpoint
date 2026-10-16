@@ -33,3 +33,17 @@ def test_side_select_rule_prefers_coverage_then_mae():
     assert choose({512: {"coverage": 0.30, "mae_mm": 1.0}, 1536: {"coverage": 0.54, "mae_mm": 1.1}}) == 1536
     # within 0.02 of the best coverage: lower error wins
     assert choose({1024: {"coverage": 0.53, "mae_mm": 0.9}, 1536: {"coverage": 0.54, "mae_mm": 1.1}}) == 1024
+
+
+def test_vt_decisions_tally_counts_each_suggestion_against_the_ruler():
+    from tools.vt_decisions import tally
+
+    pts = [{"truth_mm": 0.5, "band_mm": [0.4, 0.9]},   # straddles 0.3? no: lo 0.4 > 0.3 -> repair, ruler above
+           {"truth_mm": 0.25, "band_mm": [0.1, 0.2]},  # accept, ruler at or below
+           {"truth_mm": 0.6, "band_mm": [0.2, 0.8]},   # gauge
+           {"truth_mm": 0.6, "band_mm": None}]
+    t = tally(pts, limits=(0.3,))
+    c = t["by_limit"]["0.3"]
+    assert t["band_found"] == 3 and t["band_width_mm"]["median"] == 0.5
+    assert c["repair_ruler_above"] == 1 and c["accept_ruler_at_or_below"] == 1 and c["gauge_ruler_above"] == 1
+    assert c["ruler_above"] == 2
