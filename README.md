@@ -34,8 +34,11 @@ field set, without our scale card: with the UNet's masks the band holds the rule
    downstream. Closing a defect needs a repair photo and a human decision.
 
 ## Screenshot
-<!-- Screenshot of the Inspect page goes here (docs/screenshot-inspect.png), taken from the running app. -->
-_Screenshot pending: it will be taken from the running app, not mocked up._
+![Inspect page: drawn example with the scale card, crack mask, width band, suggestion and provenance badges](docs/screenshot-inspect.png)
+
+The Inspect page in recorded mode, captured from the running app with `tools/capture_app.py` (headless Chromium,
+1920 x 1080). The photo is one of the **drawn** examples (synthetic texture, drawn line, drawn card), so its badges
+say "SYNTHETIC EXAMPLE"; its result comes from the classical CPU fallback.
 
 ## Architecture
 ```
@@ -100,6 +103,8 @@ Other tools:
 python -m tools.make_card results/card.pdf      # A4 scale card; print at 100 %, check the 100 mm ruler
 python -m tools.check_repo               # secrets / personal data / deny-list scan
 python -m tools.results_table --write    # regenerate the table below from results/
+# screenshots + clips of every page (needs a Python with playwright and a Chromium; output is not committed)
+python tools/capture_app.py --chrome <path to chrome> --out results/tmp/capture
 ```
 
 ## Trained model
