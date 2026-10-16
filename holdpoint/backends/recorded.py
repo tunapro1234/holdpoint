@@ -7,6 +7,7 @@ Cache format (one JSON file):
   "results": {
     "<image sha256>": {
       "mask": {"shape": [H, W], "rle": [start, length, ...]},   # optional
+      "width_masks": {"<input side>": {"shape": ..., "rle": ...}}, # optional: masks from segment_at(img, side)
       "p_crack": 0.93,                                            # optional
       "vlm": {"label": "crack", "sentence": "..."},               # optional
       "provenance": {...}                                         # optional per-item override
@@ -82,6 +83,12 @@ class RecordedBackend(Backend):
     def segment(self, img: np.ndarray) -> SegmentResult:
         item, prov = self._item(img, "mask")
         return SegmentResult(mask=rle_to_mask(item["mask"]), provenance=prov)
+
+    def segment_at(self, img: np.ndarray, side: int) -> SegmentResult:
+        item, prov = self._item(img, "width_masks")
+        if str(side) not in item["width_masks"]:
+            raise NotRecorded(f"no recorded width mask at side {side} for image {prov['image_sha256'][:12]}")
+        return SegmentResult(mask=rle_to_mask(item["width_masks"][str(side)]), provenance={**prov, "input_side": side})
 
     def classify(self, img: np.ndarray) -> ClassifyResult:
         item, prov = self._item(img, "p_crack")

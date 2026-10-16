@@ -9,7 +9,9 @@
    1.2
   ],
   "card": true,
-  "tilt": false
+  "tilt": false,
+  "line_covered": 0.974,
+  "mask_on_line": 1.0
  },
  {
   "file": "example-2-card-tilted.jpg",
@@ -21,7 +23,9 @@
    0.5
   ],
   "card": true,
-  "tilt": true
+  "tilt": true,
+  "line_covered": 0.971,
+  "mask_on_line": 1.0
  },
  {
   "file": "example-3-no-card.jpg",
@@ -33,7 +37,9 @@
    1.0
   ],
   "card": false,
-  "tilt": false
+  "tilt": false,
+  "line_covered": 1.0,
+  "mask_on_line": 1.0
  },
  {
   "file": "ozgenel-test-018.jpg",

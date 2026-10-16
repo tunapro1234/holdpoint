@@ -38,7 +38,7 @@ field set, without our scale card: with the UNet's masks the band holds the rule
 
 The Inspect page in recorded mode, captured from the running app with `tools/capture_app.py` (headless Chromium,
 1920 x 1080). The photo is one of the **drawn** examples (synthetic texture, drawn line, drawn card), so its badges
-say "SYNTHETIC EXAMPLE"; its result comes from the classical CPU fallback.
+say "SYNTHETIC EXAMPLE"; its result comes from the released UNet, run on CPU by `tools/make_examples.py`.
 
 ## Architecture
 ```
@@ -206,8 +206,11 @@ tool is missing) and the git commit.
 - Cracks under 3 pixels wide are not judged; the app says "measure with a gauge". The pixel counted is the
   model input pixel (0.156 mm on the width pass), not the phone's, because the mask cannot be finer than that.
 - The bundled `examples/example-*` are **drawn** images (synthetic texture, drawn line, drawn card). Their results
-  come from the classical CPU fallback and are labelled as synthetic in the app. Its width ranges are wide
-  (example 1: 0.06-1.44 mm for a drawn 0.6-1.2 mm line).
+  come from the released UNet run on CPU (`tools/make_examples.py`, which first checks that the mask covers at
+  least 90% of the drawn line and lies on it) and are labelled as synthetic in the app. The bands read wide:
+  example 1 gives 0.85-1.56 mm for a drawn 0.6-1.2 mm line, and example 2 gives 0.55-0.95 mm for a drawn
+  0.3-0.5 mm line, so its band misses the true width. A drawn line is not a crack; these images show the chain,
+  they do not test it.
 - `examples/ozgenel-test-*` are four real test photos (the first four in split order after removing near
   duplicates), segmented by the released UNet on CPU at the app's 512 px input (IoU against the real masks
   0.45-0.75, stored in `examples/index.json`). They have no scale card, so the app gives no width in mm.

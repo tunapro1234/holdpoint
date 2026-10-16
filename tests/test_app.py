@@ -46,6 +46,7 @@ def test_inspect_shows_result_and_badge():
     at = run("pages/1_Inspect.py")
     text = all_text(at)
     assert "SYNTHETIC EXAMPLE" in text  # bundled examples are drawn, and say so
+    assert "unet-resnet18" in text  # computed by the released UNet, not the classical fallback
     assert "example values, not a standard" in text
     assert any(m.label == "Crack width" for m in at.metric)
 

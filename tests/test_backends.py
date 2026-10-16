@@ -72,6 +72,26 @@ def test_recorded_returns_cached_results_with_provenance(cache):
     assert v.label == "crack" and v.provenance["model"] == "unet-resnet18:test"
 
 
+def test_recorded_segment_at_replays_width_mask(cache):
+    path, img, mask = cache
+    data = json.loads(path.read_text())
+    wide = np.zeros_like(mask)
+    wide[18:26, 10:80] = True
+    data["results"][image_sha256(img)]["width_masks"] = {"128": mask_to_rle(wide)}
+    path.write_text(json.dumps(data))
+    be = get_backend("recorded", path=path)
+    seg = be.segment_at(img, 128)
+    assert np.array_equal(seg.mask, wide) and seg.provenance["input_side"] == 128
+    with pytest.raises(NotRecorded):
+        be.segment_at(img, 256)  # another size was never recorded
+
+
+def test_recorded_segment_at_without_width_masks_raises(cache):
+    path, img, _ = cache
+    with pytest.raises(NotRecorded):
+        get_backend("recorded", path=path).segment_at(img, 128)
+
+
 def test_recorded_unknown_image_raises(cache):
     path, img, _ = cache
     be = get_backend("recorded", path=path)
