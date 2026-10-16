@@ -25,6 +25,8 @@ from holdpoint.backends.cpu import BASELINE_MODEL  # noqa: E402
 from holdpoint.backends.recorded import NotRecorded  # noqa: E402
 from holdpoint.pipeline import inspect, overlay  # noqa: E402
 
+DEFAULT_EXAMPLE = "example-4-card-hairline"
+
 st.set_page_config(page_title="Inspect · HoldPoint", layout="wide")
 st.title("Inspect")
 glossary()
@@ -43,7 +45,9 @@ if source == "Recorded example":
     if not examples:
         st.info("No example images found.")
     else:
-        pick = c1.selectbox("Example", examples, format_func=lambda p: p.stem)
+        # the hairline example opens first: its answer is "measure with a gauge", the case the app is built for
+        first = next((i for i, p in enumerate(examples) if p.stem == DEFAULT_EXAMPLE), 0)
+        pick = c1.selectbox("Example", examples, index=first, format_func=lambda p: p.stem)
         img = read_rgb(pick)
         backend = get_backend("recorded", path=recorded_path()) if recorded_path().exists() else live_cpu_backend()
 else:

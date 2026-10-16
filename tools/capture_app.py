@@ -6,7 +6,8 @@ Starts Streamlit in recorded mode on 127.0.0.1 (a free local port, nothing expos
 walks through the pages in a headless 1920 x 1080 Chromium, and stops the Streamlit process it started. Every
 scene is saved as one or more PNGs (viewport only) plus one .webm clip, with pauses so the clip can be read.
 
-Scenes: s1 Home · s2 Inspect a drawn example with the scale card, send it to the review queue · s3 Inspect a real
+Scenes: s1 Home · s2 Inspect the drawn hairline example with the scale card (the page's default, "measure with a
+gauge"), send it to the review queue · s2-inspect-repair the drawn example 1 ("repair suggested") · s3 Inspect a real
 Özgenel test photo (no card, so no width in mm) · s4 Review queue: approve, open a defect, record the decision ·
 s5 Defects: Open and Hold list tabs · s6 Benchmarks · s7 Data & limits, scrolled to the crack-ruler table.
 
@@ -167,6 +168,12 @@ def run(a) -> int:
                 shot("queued")
             s.scene("s2-inspect-card", "/Inspect", inspect_card)
 
+            def inspect_repair(page, shot):
+                pick_example(page, a.repair_example)
+                page.get_by_test_id("stMetricLabel").filter(has_text="Crack width").wait_for()
+                shot()
+            s.scene("s2-inspect-repair", "/Inspect", inspect_repair)
+
             def inspect_real(page, shot):
                 pick_example(page, a.real_example)
                 page.get_by_test_id("stMetricLabel").filter(has_text="Crack width").wait_for()
@@ -223,6 +230,7 @@ def main(argv=None) -> int:
     ap.add_argument("--streamlit", type=Path, default=ROOT / ".venv" / "bin" / "streamlit")
     ap.add_argument("--pause", type=float, default=2.5, help="seconds held before each screenshot and scene end")
     ap.add_argument("--real-example", default="ozgenel-test-018")
+    ap.add_argument("--repair-example", default="example-1-card-head-on")
     ap.add_argument("--inspector", default="site inspector")
     a = ap.parse_args(argv)
     if not a.chrome.is_file():

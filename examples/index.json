@@ -42,6 +42,20 @@
   "mask_on_line": 1.0
  },
  {
+  "file": "example-4-card-hairline.jpg",
+  "image_sha256": "8ff9185b473ee84b21b269fe9a21e86330de3605aa5d25a5bd8b28f489219d19",
+  "synthetic": true,
+  "seed": 4,
+  "width_mm": [
+   0.1,
+   0.3
+  ],
+  "card": true,
+  "tilt": false,
+  "line_covered": 0.934,
+  "mask_on_line": 1.0
+ },
+ {
   "file": "ozgenel-test-018.jpg",
   "image_sha256": "7de455d57ab66737de6856f4e143b62186911e988d43d072304f6e7d4aacaec3",
   "synthetic": false,

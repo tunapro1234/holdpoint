@@ -95,6 +95,7 @@ EXAMPLES = [
     ("example-1-card-head-on", dict(seed=1, width_mm=(0.6, 1.2), card=True, tilt=False)),
     ("example-2-card-tilted", dict(seed=2, width_mm=(0.3, 0.5), card=True, tilt=True)),
     ("example-3-no-card", dict(seed=3, width_mm=(0.6, 1.0), card=False, tilt=False)),
+    ("example-4-card-hairline", dict(seed=4, width_mm=(0.1, 0.3), card=True, tilt=False)),
 ]
 
 

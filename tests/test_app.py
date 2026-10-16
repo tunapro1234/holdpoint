@@ -52,6 +52,12 @@ def test_inspect_shows_result_and_badge():
     assert any(m.label == "Crack width" for m in at.metric)
 
 
+def test_inspect_opens_on_the_hairline_example():
+    at = run("pages/1_Inspect.py")
+    assert "hairline" in str(at.selectbox[0].value)
+    assert [m.value for m in at.metric if m.label == "Suggestion"] == ["Measure with a gauge"]
+
+
 def test_inspect_to_review_to_defect(isolated):
     at = run("pages/1_Inspect.py")
     at.selectbox[0].set_value(next(o for o in at.selectbox[0].options if "head-on" in o)).run()

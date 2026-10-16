@@ -34,7 +34,7 @@ field set, without our scale card: with the UNet's masks the band holds the rule
    downstream. Closing a defect needs a repair photo and a human decision.
 
 ## Screenshot
-![Inspect page: drawn example with the scale card, crack mask, width band, suggestion and provenance badges](docs/screenshot-inspect.png)
+![Inspect page: drawn hairline example with the scale card, crack mask, width band, "measure with a gauge" suggestion and provenance badges](docs/screenshot-inspect.png)
 
 The Inspect page in recorded mode, captured from the running app with `tools/capture_app.py` (headless Chromium,
 1920 x 1080). The photo is one of the **drawn** examples (synthetic texture, drawn line, drawn card), so its badges
@@ -215,10 +215,17 @@ tool is missing) and the git commit.
   model input pixel (0.156 mm on the width pass), not the phone's, because the mask cannot be finer than that.
 - The bundled `examples/example-*` are **drawn** images (synthetic texture, drawn line, drawn card). Their results
   come from the released UNet run on CPU (`tools/make_examples.py`, which first checks that the mask covers at
-  least 90% of the drawn line and lies on it) and are labelled as synthetic in the app. The bands read wide:
-  example 1 gives 0.85-1.56 mm for a drawn 0.6-1.2 mm line, and example 2 gives 0.55-0.95 mm for a drawn
-  0.3-0.5 mm line, so its band misses the true width. A drawn line is not a crack; these images show the chain,
-  they do not test it.
+  least 90% of the drawn line and lies on it) and are labelled as synthetic in the app. The bands read wide.
+  With the example table, every class gives the same suggestion:
+
+  | Example | Drawn line | Band | Suggestion |
+  |---|---|---|---|
+  | 1, card, head-on | 0.6-1.2 mm | 0.85-1.56 mm | repair suggested |
+  | 2, card, tilted | 0.3-0.5 mm | 0.55-0.95 mm (misses the true width) | repair suggested |
+  | 3, no card | 0.6-1.0 mm | width not measurable | width not measurable |
+  | 4, card, hairline | 0.1-0.3 mm | 0.16-0.66 mm, only a few model pixels wide | measure with a gauge |
+
+  A drawn line is not a crack; these images show the chain, they do not test it.
 - `examples/ozgenel-test-*` are four real test photos (the first four in split order after removing near
   duplicates), segmented by the released UNet on CPU at the app's 512 px input (IoU against the real masks
   0.45-0.75, stored in `examples/index.json`). They have no scale card, so the app gives no width in mm.
