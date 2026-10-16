@@ -122,6 +122,11 @@ def test_template_text_passes_guard():
     assert "0.15-0.35 mm" in r.text and "inspector" in r.text
 
 
+def test_template_wording_matches_the_app():
+    assert "Suggestion: measure with a gauge." in draft_report(report()).text
+    assert "Suggestion: repair suggested." in draft_report(report(band=(0.5, 0.7), suggestion=REPAIR)).text
+
+
 def test_template_no_card():
     r = draft_report(report(band=None, suggestion=NOT_MEASURABLE, limit=None))
     assert "width not measurable" in r.text

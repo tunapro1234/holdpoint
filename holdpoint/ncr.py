@@ -107,6 +107,9 @@ class TextWriter(Protocol):
     def write(self, fields: dict) -> str: ...
 
 
+SUGGESTION_TEXT = {"measure_with_gauge": "measure with a gauge"}  # as the app shows it; others read fine as is
+
+
 def _band_text(band) -> str:
     return "width not measurable (no scale card)" if band is None else f"{band[0]}-{band[1]} mm"
 
@@ -118,7 +121,7 @@ class TemplateWriter:
         limit = "" if f["limit_mm"] is None else f" against a limit of {f['limit_mm']} mm from the user table"
         return (
             f"Element {f['element_id']}: crack width {_band_text(f['band_mm'])}{limit}. "
-            f"Suggestion: {f['suggestion'].replace('_', ' ')}. "
+            f"Suggestion: {SUGGESTION_TEXT.get(f['suggestion'], f['suggestion'].replace('_', ' '))}. "
             f"Second check: {f['vlm_label'].replace('_', ' ')}. "
             "An inspector must confirm before this report is opened."
         )
