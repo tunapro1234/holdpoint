@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from tools.eval_vt import dist_dir  # noqa: E402
 
-GREEN, RED, GREY, ORANGE = (40, 170, 70), (210, 40, 40), (150, 150, 150), (255, 140, 0)
+GREEN, RED, GREY, ORANGE = (90, 220, 120), (255, 90, 80), (200, 200, 200), (255, 140, 0)
 
 
 def held(p: dict) -> bool | None:
@@ -49,16 +49,25 @@ def draw(rgb: np.ndarray, mask: np.ndarray, points: list[dict], width: int = 160
     out = out.astype(np.uint8)
     k = width / out.shape[1]
     out = cv2.resize(out, (width, round(out.shape[0] * k)), interpolation=cv2.INTER_AREA)
-    for p in points:
+    font, scale, thick = cv2.FONT_HERSHEY_SIMPLEX, 1.3, 3
+    # labels alternate below-right / above-left along the crack so neighbours do not overlap
+    for i, p in enumerate(sorted(points, key=lambda q: q["x"])):
         x, y = round(p["x"] * k), round(p["y"] * k)
         h = held(p)
         color = GREY if h is None else (GREEN if h else RED)
         band = "no band" if h is None else f"band {p['band_mm'][0]:.1f}-{p['band_mm'][1]:.1f} mm"
-        cv2.circle(out, (x, y), 22, color, 4)
-        for i, line in enumerate((f"ruler {p['truth_mm']:g} mm", band)):
-            org = (min(x + 30, width - 330), y - 8 + 34 * i)
-            cv2.putText(out, line, org, cv2.FONT_HERSHEY_SIMPLEX, 0.95, (255, 255, 255), 6, cv2.LINE_AA)
-            cv2.putText(out, line, org, cv2.FONT_HERSHEY_SIMPLEX, 0.95, color, 2, cv2.LINE_AA)
+        lines = (f"ruler {p['truth_mm']:g} mm", band)
+        cv2.circle(out, (x, y), 26, color, 5)
+        tw = max(cv2.getTextSize(s, font, scale, thick)[0][0] for s in lines)
+        lh = cv2.getTextSize("Ag", font, scale, thick)[0][1] + 18
+        x0 = x + 40 if i % 2 == 0 else x - 40 - tw
+        y0 = y + 40 if i % 2 == 0 else y - 40 - 2 * lh
+        x0 = int(min(max(x0, 8), width - tw - 16))
+        y0 = int(min(max(y0, 8), out.shape[0] - 2 * lh - 16))
+        box = out[y0:y0 + 2 * lh + 12, x0:x0 + tw + 20].astype(np.float32)
+        out[y0:y0 + 2 * lh + 12, x0:x0 + tw + 20] = (0.35 * box + 0.65 * np.array((25, 25, 25))).astype(np.uint8)
+        for j, s in enumerate(lines):
+            cv2.putText(out, s, (x0 + 10, y0 + lh * (j + 1)), font, scale, color, thick, cv2.LINE_AA)
     return out
 
 
