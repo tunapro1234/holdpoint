@@ -68,6 +68,9 @@ class CpuBackend(Backend):
         return BASELINE_MODEL
 
     def provenance(self) -> dict:
+        if self._unet() is None:
+            return make_provenance(self.name, "cpu", BASELINE_MODEL,
+                                   label="live on CPU, classical baseline (the trained UNet is not loaded)")
         return make_provenance(self.name, "cpu", self._model_name(), label="live on CPU")
 
     # -- tasks ----------------------------------------------------------------

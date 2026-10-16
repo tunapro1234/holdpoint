@@ -120,7 +120,7 @@ def test_cpu_segment_returns_mask_without_torch(monkeypatch):
     assert PROV_KEYS <= seg.provenance.keys()
     assert seg.provenance["backend"] == "cpu" and seg.provenance["device"] == "cpu"
     assert seg.provenance["model"] == "classical-blackhat-otsu-v0"
-    assert seg.provenance["label"] == "live on CPU"
+    assert seg.provenance["label"].startswith("live on CPU, classical baseline")
 
 
 def test_cpu_blank_image_empty_mask_and_low_p():

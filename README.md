@@ -70,7 +70,7 @@ Numbers come from deterministic code (`measure/`, `decide.py`). The language mod
 
 | Backend | Where it runs | Label shown in the app |
 |---|---|---|
-| `cpu` | local CPU; UNet weights if present, otherwise a classical image-processing fallback | "live on CPU" |
+| `cpu` | local CPU; UNet weights if present, otherwise a classical image-processing fallback | "live on CPU", or "live on CPU, classical baseline (the trained UNet is not loaded)" |
 | `recorded` | reads results computed earlier from a JSON file | "computed on <device>, <date>, <command>" |
 | `amd_vllm` | OpenAI-compatible vLLM server (`HOLDPOINT_VLLM_BASE_URL`); not run yet | "live on AMD" |
 
@@ -88,12 +88,19 @@ With Docker (light image, recorded mode, bound to 127.0.0.1 only):
 ```bash
 docker compose up --build
 ```
+Hosted (Streamlit Community Cloud or similar): entrypoint `app/Home.py`. The platform reads `app/requirements.txt`
+(next to the entrypoint), which adds CPU-only torch, so uploaded photos run the trained UNet. The weights are
+downloaded from the release below on the first uploaded photo (55 MB, a few seconds) and used only if their
+sha256 matches. Measured locally on CPU: about 2 s to load torch and the model, 2-3 s per photo, peak memory
+about 1.1 GB. If the weights cannot be loaded, the page says the mask comes from the classical baseline.
 Useful settings:
 
 | Variable | Meaning |
 |---|---|
 | `HOLDPOINT_RECORDED` | results file the `recorded` backend replays (default: `examples/recorded.json`) |
-| `HOLDPOINT_UNET_WEIGHTS` | UNet weights for the `cpu` backend; without it the classical fallback runs |
+| `HOLDPOINT_UNET_WEIGHTS` | UNet weights for the `cpu` backend. Without it the app uses `runs/seg-gpu-1/model.pt` if present, else downloads the release file (when torch is installed); failing that, the classical fallback runs and says so |
+| `HOLDPOINT_UNET_URL` | where the app downloads the UNet weights from (default: the v0.1-unet release); empty turns the download off |
+| `HOLDPOINT_CACHE` | folder for the downloaded weights (default `~/.cache/holdpoint`) |
 | `HOLDPOINT_UNET_SIDE` | long side a photo is resized to before the UNet (default 512, chosen on the validation split; the model is trained on 256 px crops, the probability map is resized back) |
 | `HOLDPOINT_VLLM_BASE_URL` | vLLM endpoint for the `amd_vllm` backend |
 | `HOLDPOINT_HOLD_WEBHOOK` | where the hold list is posted (optional) |
@@ -101,6 +108,7 @@ Useful settings:
 Other tools:
 ```bash
 python -m tools.make_card results/card.pdf      # A4 scale card; print at 100 %, check the 100 mm ruler
+                                                # (a copy is in docs/scale-card.pdf; the Inspect page offers it)
 python -m tools.check_repo               # secrets / personal data / deny-list scan
 python -m tools.results_table --write    # regenerate the table below from results/
 # screenshots + clips of every page (needs a Python with playwright and a Chromium; output is not committed)

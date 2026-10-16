@@ -14,6 +14,7 @@ COPY holdpoint ./holdpoint
 COPY app ./app
 COPY config ./config
 COPY examples ./examples
+COPY docs ./docs
 COPY tools ./tools
 
 RUN useradd --create-home holdpoint && mkdir -p /app/results/tmp && chown -R holdpoint /app/results

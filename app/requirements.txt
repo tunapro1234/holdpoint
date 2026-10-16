@@ -1,0 +1,15 @@
+# Dependencies for a hosted deploy of the app (Streamlit Community Cloud reads the file next to the entrypoint,
+# app/Home.py, before the repository root). CPU-only torch so live uploads run the trained UNet; its weights are
+# fetched from the GitHub release on the first live photo and checked against their sha256 (app/common.py).
+# Local development and tests use ../requirements.txt and ../requirements-ml.txt instead.
+--extra-index-url https://download.pytorch.org/whl/cpu
+numpy>=1.26
+opencv-python-headless>=4.9
+scikit-image>=0.22
+scipy>=1.11
+streamlit>=1.38
+openai>=1.40
+pyyaml>=6.0
+torch>=2.3
+torchvision>=0.18
+segmentation-models-pytorch>=0.3.3

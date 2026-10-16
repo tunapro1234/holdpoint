@@ -15,6 +15,7 @@ PAGES = ["Home.py"] + sorted(p.relative_to(APP).as_posix() for p in (APP / "page
 def isolated(tmp_path, monkeypatch):
     monkeypatch.setenv("HOLDPOINT_STATE", str(tmp_path / "state"))
     monkeypatch.setenv("HOLDPOINT_RESULTS", str(tmp_path / "results"))
+    monkeypatch.setenv("HOLDPOINT_UNET_URL", "")  # tests never download the model
     (tmp_path / "results").mkdir()
     return tmp_path
 
@@ -150,3 +151,34 @@ def test_data_limits_without_ruler_results_says_not_measured():
     text = all_text(run("pages/5_Data_and_limits.py"))
     assert "Width against a crack ruler on real cracks: not measured" in text
     assert "examples/ozgenel-test-*" in text and "458 photos" in text
+
+
+def test_upload_offers_scale_card_and_test_image():
+    at = run("pages/1_Inspect.py")
+    at.radio[0].set_value("Upload (live on CPU)").run()
+    assert not at.exception
+    labels = [b.proto.label for b in at.get("download_button")]
+    assert any("Scale card (PDF" in x for x in labels) and any("drawn, not a photo" in x for x in labels)
+
+
+def test_unet_weights_order_and_checksum(tmp_path, monkeypatch):
+    pytest.importorskip("torch")
+    pytest.importorskip("segmentation_models_pytorch")
+    import app.common as common
+
+    monkeypatch.setattr(common, "LOCAL_UNET", tmp_path / "none.pt")
+    monkeypatch.setenv("HOLDPOINT_CACHE", str(tmp_path / "cache"))
+    monkeypatch.delenv("HOLDPOINT_UNET_WEIGHTS", raising=False)
+    assert common.unet_weights() is None  # download turned off by the fixture
+
+    wrong = tmp_path / "wrong.pt"
+    wrong.write_bytes(b"not the released model")
+    monkeypatch.setenv("HOLDPOINT_UNET_URL", wrong.as_uri())
+    assert common.unet_weights() is None  # checksum mismatch: not used, not kept
+    assert not any((tmp_path / "cache").glob("*"))
+
+    monkeypatch.setattr(common, "UNET_SHA256", common._sha256(wrong))
+    assert common.unet_weights() == tmp_path / "cache" / "model.pt"
+
+    monkeypatch.setenv("HOLDPOINT_UNET_WEIGHTS", str(wrong))
+    assert common.unet_weights() == wrong

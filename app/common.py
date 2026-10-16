@@ -19,6 +19,12 @@ from holdpoint.defects import DefectStore  # noqa: E402
 from holdpoint.ledger import Ledger  # noqa: E402
 
 EXAMPLES = ROOT / "examples"
+DOCS = ROOT / "docs"
+# The released UNet (README "Trained model"). Fetched once for live uploads when no local weights are given,
+# and used only if its sha256 matches. HOLDPOINT_UNET_URL="" turns the download off.
+UNET_URL = "https://github.com/tunapro1234/holdpoint/releases/download/v0.1-unet/model.pt"
+UNET_SHA256 = "1a992634324e9ef8b4fedb8e4495ea056c872eee0f8f09c46f774af60865b6a7"
+LOCAL_UNET = ROOT / "runs" / "seg-gpu-1" / "model.pt"
 
 
 # read on every call so tests and deployments can point them elsewhere
@@ -77,6 +83,57 @@ def push_queue(item: dict) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a") as fh:
         fh.write(json.dumps(item, sort_keys=True) + "\n")
+
+
+def _sha256(path: Path) -> str:
+    import hashlib
+
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def unet_weights() -> Path | None:
+    """UNet weights for live CPU runs: HOLDPOINT_UNET_WEIGHTS, else a local training run, else the release file
+    (downloaded once and checked against UNET_SHA256). None means the classical baseline runs, and says so."""
+    if os.environ.get("HOLDPOINT_UNET_WEIGHTS"):
+        return Path(os.environ["HOLDPOINT_UNET_WEIGHTS"])
+    if LOCAL_UNET.is_file():
+        return LOCAL_UNET
+    url = os.environ.get("HOLDPOINT_UNET_URL", UNET_URL)
+    try:
+        import segmentation_models_pytorch  # noqa: F401
+        import torch  # noqa: F401
+    except ImportError:
+        return None  # no point fetching weights that cannot run
+    if not url:
+        return None
+    cache = Path(os.environ.get("HOLDPOINT_CACHE", Path.home() / ".cache" / "holdpoint")) / "model.pt"
+    if cache.is_file() and _sha256(cache) == UNET_SHA256:
+        return cache
+    import urllib.request
+
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    tmp = cache.with_suffix(".part")
+    try:
+        urllib.request.urlretrieve(url, tmp)
+    except OSError:
+        tmp.unlink(missing_ok=True)
+        return None
+    if _sha256(tmp) != UNET_SHA256:
+        tmp.unlink()
+        return None
+    tmp.replace(cache)
+    return cache
+
+
+@st.cache_resource(show_spinner="Loading the crack model (first live photo only)...")
+def live_cpu_backend():
+    from holdpoint.backends import get_backend
+
+    return get_backend("cpu", weights=unet_weights())
 
 
 def threshold_table() -> ThresholdTable:

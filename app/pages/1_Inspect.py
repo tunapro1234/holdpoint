@@ -8,9 +8,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st  # noqa: E402
 
 from app.common import (  # noqa: E402
+    DOCS,
     EXAMPLES,
     STATE_LABEL,
     glossary,
+    live_cpu_backend,
     provenance_badge,
     push_queue,
     read_rgb,
@@ -19,6 +21,7 @@ from app.common import (  # noqa: E402
     threshold_table,
 )
 from holdpoint.backends import get_backend  # noqa: E402
+from holdpoint.backends.cpu import BASELINE_MODEL  # noqa: E402
 from holdpoint.backends.recorded import NotRecorded  # noqa: E402
 from holdpoint.pipeline import inspect, overlay  # noqa: E402
 
@@ -42,20 +45,31 @@ if source == "Recorded example":
     else:
         pick = c1.selectbox("Example", examples, format_func=lambda p: p.stem)
         img = read_rgb(pick)
-        backend = get_backend("recorded", path=recorded_path()) if recorded_path().exists() else get_backend("cpu")
+        backend = get_backend("recorded", path=recorded_path()) if recorded_path().exists() else live_cpu_backend()
 else:
     up = c1.file_uploader("Photo of a concrete surface with the scale card in view", type=["jpg", "jpeg", "png"])
+    d1, d2 = c1.columns(2)
+    card_pdf, card_example = DOCS / "scale-card.pdf", EXAMPLES / "example-1-card-head-on.jpg"
+    if card_pdf.is_file():
+        d1.download_button("Scale card (PDF, print at 100%)", card_pdf.read_bytes(), file_name="holdpoint-scale-card.pdf",
+                           mime="application/pdf")
+    if card_example.is_file():
+        d2.download_button("Test image with the card (drawn, not a photo)", card_example.read_bytes(),
+                           file_name=card_example.name, mime="image/jpeg")
     if up is not None:
         img = read_rgb(up.getvalue())
-        backend = get_backend("cpu")
+        backend = live_cpu_backend()
 
 if img is not None:
     try:
         insp = inspect(img, backend, table, element_class)
     except NotRecorded:
         st.warning("This image has no recorded result; processing live on CPU instead.")
-        insp = inspect(img, get_backend("cpu"), table, element_class)
+        insp = inspect(img, live_cpu_backend(), table, element_class)
 
+    if insp.provenance["segment"].get("model") == BASELINE_MODEL:
+        st.warning("The trained UNet is not loaded here, so this mask comes from the classical baseline "
+                   "(black-hat filter + Otsu threshold). Expect a rougher mask than the model gives.")
     left, right = st.columns([3, 2])
     left.image(overlay(img, insp), caption="Crack mask in orange, scale card outline in cyan", width="stretch")
     with right:
