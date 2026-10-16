@@ -89,6 +89,33 @@ def test_guard_catches_invented_number():
     assert e.value.invented == ["0.42", "2"]
 
 
+@pytest.mark.parametrize("text, invented", [
+    ("Element P-14 shows two parallel cracks.", ["two"]),
+    ("The crack is about half a millimetre wide.", ["half", "millimetre"]),
+    ("Width reaches a few millimetres near the corner.", ["millimetres"]),
+    ("Crack is Three cm from the edge.", ["Three", "cm"]),
+    ("A single crack, 0.15-0.35 mm, twice the limit.", ["single", "twice"]),
+])
+def test_guard_catches_number_words_and_bare_units(text, invented):
+    with pytest.raises(NumberGuardError) as e:
+        check_numbers(text, report().fields())
+    assert e.value.invented == invented
+
+
+def test_guard_allows_units_after_field_numbers_and_words_from_fields():
+    f = report().fields()
+    check_numbers("Element P-14: 0.15-0.35 mm against 0.3mm. Second check: crack. An inspector decides.", f)
+    f["vlm_sentence"] = "One thin line."  # a number word the fields already contain may be repeated
+    check_numbers("The second check saw one thin line.", f)
+
+
+def test_llm_number_word_rejected_falls_back_to_template():
+    client, _ = fake_client("Element P-14 has two cracks, each about half a millimetre wide. An inspector decides.")
+    r = draft_report(report(), LlmWriter(client=client))
+    assert r.text == TemplateWriter().write(report().fields())
+    assert "two" in r.text_source and "half" in r.text_source
+
+
 def test_template_text_passes_guard():
     r = draft_report(report())
     assert r.text_source == "template"

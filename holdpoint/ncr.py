@@ -2,7 +2,9 @@
 
 The report fields come from deterministic code. A text writer (template, or an LLM behind an
 OpenAI-compatible endpoint) turns them into prose. Every number in the prose must already appear in the
-fields; otherwise the text is rejected and the deterministic template is used instead.
+fields; otherwise the text is rejected and the deterministic template is used instead. Numbers written as
+words ("two", "half a millimetre") count too, as in the VLM check (holdpoint.vlm): a number word must appear
+in the fields, and a unit must follow a number.
 """
 from __future__ import annotations
 
@@ -12,7 +14,12 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import Protocol
 
+from .vlm import _NUM_WORDS, _UNITS
+
 NUMBER_RE = re.compile(r"(?<![\w.])\d+(?:[.,]\d+)?")
+NUM_WORD_RE = re.compile(rf"\b(?:{_NUM_WORDS})\b", re.IGNORECASE)
+UNIT_RE = re.compile(rf"\b(?:{_UNITS})\b|%", re.IGNORECASE)
+AFTER_NUMBER_RE = re.compile(r"\d\s*$")  # a unit is only allowed right after a number ("0.35 mm", "0.35mm")
 
 
 class NumberGuardError(ValueError):
@@ -49,12 +56,24 @@ def _field_numbers(obj) -> set[str]:
     return {_norm(t) for t in numbers_in(str(obj))}
 
 
+def _field_words(obj) -> set[str]:
+    """Number words that appear in the fields' own text (outside hashes)."""
+    if isinstance(obj, dict):
+        return set().union(set(), *(_field_words(v) for k, v in obj.items() if not _is_hash_key(k)))
+    if isinstance(obj, (list, tuple)):
+        return set().union(set(), *(_field_words(v) for v in obj))
+    return {w.lower() for w in NUM_WORD_RE.findall(obj)} if isinstance(obj, str) else set()
+
+
 def check_numbers(text: str, fields: dict) -> None:
-    """Raise NumberGuardError if `text` has a number that is not in `fields`."""
-    allowed = _field_numbers(fields)
-    invented = [t for t in numbers_in(text) if _norm(t) not in allowed]
-    if invented:
-        raise NumberGuardError(invented)
+    """Raise NumberGuardError if `text` has a number that is not in `fields`: digits, number words, or a unit
+    with no number in front of it."""
+    allowed, words = _field_numbers(fields), _field_words(fields)
+    found = [(m.start(), m.group()) for m in NUMBER_RE.finditer(text) if _norm(m.group()) not in allowed]
+    found += [(m.start(), m.group()) for m in NUM_WORD_RE.finditer(text) if m.group().lower() not in words]
+    found += [(m.start(), m.group()) for m in UNIT_RE.finditer(text) if not AFTER_NUMBER_RE.search(text[:m.start()])]
+    if found:
+        raise NumberGuardError([t for _, t in sorted(found)])
 
 
 @dataclass
