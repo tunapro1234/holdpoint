@@ -5,7 +5,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import streamlit as st  # noqa: E402
 
-from app.common import STATE_LABEL, defects, glossary, ledger, provenance_badge, read_queue  # noqa: E402
+from app.common import (  # noqa: E402
+    STATE_LABEL,
+    defects,
+    glossary,
+    ledger,
+    provenance_badge,
+    read_queue,
+    report_writer,
+)
 from holdpoint.defects import Decision, DefectError  # noqa: E402
 from holdpoint.ledger import OBJECTION_CODES, LedgerError  # noqa: E402
 from holdpoint.ncr import DefectReport, draft_report  # noqa: E402
@@ -18,6 +26,8 @@ glossary()
 led = ledger()
 decided = {(e["element_id"], e["photo_sha256"]) for e in led.entries()}
 pending = [q for q in read_queue() if (q["element_id"], q["photo_sha256"]) not in decided]
+writer = report_writer()
+drafts = st.session_state.setdefault("report_drafts", {})  # an LLM draft is written once per item and session
 
 if not pending:
     st.info("Nothing waiting. Send a result from the Inspect page.")
@@ -27,11 +37,14 @@ for i, q in enumerate(pending):
         st.subheader(f"{q['element_id']} · {q['width_text']}")
         st.markdown(f"Suggestion: **{STATE_LABEL[q['suggestion']]}** · second check: {q['vlm_label'].replace('_', ' ')}")
         provenance_badge(q["provenance"].get("segment", {}), title="segment")
-        report = draft_report(DefectReport(
-            element_id=q["element_id"], photo_sha256=q["photo_sha256"],
-            band_mm=tuple(q["band_mm"]) if q["band_mm"] else None, suggestion=q["suggestion"],
-            limit_mm=q["limit_mm"], vlm_label=q["vlm_label"], vlm_sentence=q["vlm_sentence"],
-            model_version=q["model_version"]))
+        key = (q["element_id"], q["photo_sha256"])
+        if key not in drafts:
+            drafts[key] = draft_report(DefectReport(
+                element_id=q["element_id"], photo_sha256=q["photo_sha256"],
+                band_mm=tuple(q["band_mm"]) if q["band_mm"] else None, suggestion=q["suggestion"],
+                limit_mm=q["limit_mm"], vlm_label=q["vlm_label"], vlm_sentence=q["vlm_sentence"],
+                model_version=q["model_version"]), writer)
+        report = drafts[key]
         st.text_area("Defect report draft", report.text, key=f"txt{i}", disabled=True)
         st.caption(f"Text source: {report.text_source}")
         with st.form(f"decide{i}"):

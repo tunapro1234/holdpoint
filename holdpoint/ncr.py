@@ -4,7 +4,8 @@ The report fields come from deterministic code. A text writer (template, or an L
 OpenAI-compatible endpoint) turns them into prose. Every number in the prose must already appear in the
 fields; otherwise the text is rejected and the deterministic template is used instead. Numbers written as
 words ("two", "half a millimetre") count too, as in the VLM check (holdpoint.vlm): a number word must appear
-in the fields, and a unit must follow a number.
+in the fields, and a unit must follow a number. An LLM endpoint that does not answer also falls back to the
+template, and text_source says why.
 """
 from __future__ import annotations
 
@@ -14,7 +15,7 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import Protocol
 
-from .vlm import _NUM_WORDS, _UNITS
+from .vlm import _NUM_WORDS, _UNITS, MAX_RETRIES, TIMEOUT_S, api_errors
 
 NUMBER_RE = re.compile(r"(?<![\w.])\d+(?:[.,]\d+)?")
 NUM_WORD_RE = re.compile(rf"\b(?:{_NUM_WORDS})\b", re.IGNORECASE)
@@ -146,11 +147,17 @@ class LlmWriter:
         if self._client is None and not self.base_url:
             raise ValueError("LlmWriter needs base_url (HOLDPOINT_LLM_BASE_URL) or a client")
 
+    @classmethod
+    def from_env(cls) -> LlmWriter | None:
+        """The writer the app uses when HOLDPOINT_LLM_BASE_URL is set, else None (template only)."""
+        return cls() if os.environ.get("HOLDPOINT_LLM_BASE_URL") else None
+
     def write(self, f: dict) -> str:
         if self._client is None:
             from openai import OpenAI
 
-            self._client = OpenAI(base_url=self.base_url, api_key=os.environ.get("HOLDPOINT_LLM_API_KEY", "EMPTY"))
+            self._client = OpenAI(base_url=self.base_url, api_key=os.environ.get("HOLDPOINT_LLM_API_KEY", "EMPTY"),
+                                  timeout=TIMEOUT_S, max_retries=MAX_RETRIES)
         resp = self._client.chat.completions.create(
             model=self.model,
             temperature=0,
@@ -164,19 +171,23 @@ class LlmWriter:
 
 
 def draft_report(report: DefectReport, writer: TextWriter | None = None) -> DefectReport:
-    """Fill report.text. LLM text that fails the number guard is replaced by the template text."""
+    """Fill report.text. LLM text that fails the number guard, or an LLM that does not answer, is replaced by
+    the template text, and text_source says why."""
     fields = report.fields()
-    fallback = TemplateWriter()
-    writer = writer or fallback
-    try:
-        text = writer.write(fields)
-        check_numbers(text, fields)
+    text, source = None, "template"
+    if writer is not None:
         source = writer.name
-    except NumberGuardError as e:
-        if writer is fallback:
-            raise
-        text = fallback.write(fields)
+        try:
+            text = writer.write(fields)
+            check_numbers(text, fields)
+            if not text.strip():
+                text, source = None, f"template ({writer.name} returned no text)"
+        except NumberGuardError as e:
+            text, source = None, f"template ({writer.name} text rejected: invented numbers {e.invented})"
+        except api_errors() as e:
+            text, source = None, f"template ({writer.name} unreachable: {type(e).__name__})"
+    if text is None:
+        text = TemplateWriter().write(fields)
         check_numbers(text, fields)
-        source = f"template ({writer.name} text rejected: invented numbers {e.invented})"
     report.text, report.text_source = text, source
     return report

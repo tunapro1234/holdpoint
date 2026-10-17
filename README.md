@@ -102,8 +102,15 @@ Useful settings:
 | `HOLDPOINT_UNET_URL` | where the app downloads the UNet weights from (default: the v0.1-unet release); empty turns the download off |
 | `HOLDPOINT_CACHE` | folder for the downloaded weights (default `~/.cache/holdpoint`) |
 | `HOLDPOINT_UNET_SIDE` | long side a photo is resized to before the UNet (default 512, chosen on the validation split; the model is trained on 256 px crops, the probability map is resized back) |
-| `HOLDPOINT_VLLM_BASE_URL` | vLLM endpoint for the `amd_vllm` backend |
+| `HOLDPOINT_VLLM_BASE_URL` | vLLM endpoint for the `amd_vllm` backend. When set, the Inspect second check asks it (badge "live on AMD"); if it does not answer, the check reads "unclear" with the reason and the width band is unchanged |
+| `HOLDPOINT_VLLM_MODEL`, `HOLDPOINT_VLLM_API_KEY`, `HOLDPOINT_VLLM_DEVICE` | model name (default `Qwen/Qwen2.5-VL-7B-Instruct`), key (default `EMPTY`) and the device named on the badge |
+| `HOLDPOINT_LLM_BASE_URL` | OpenAI-compatible chat endpoint that writes the defect report draft in the Review queue. Without it the draft is the template text. If the endpoint does not answer, or its text has a number that is not in the report fields, the template text is used and "Text source" says why |
+| `HOLDPOINT_LLM_API_KEY` | key for that endpoint (default `EMPTY`) |
+| `HOLDPOINT_LLM_MODEL` | model name sent to it (default `Qwen/Qwen2.5-VL-7B-Instruct`) |
 | `HOLDPOINT_HOLD_WEBHOOK` | where the hold list is posted (optional) |
+
+On Streamlit Community Cloud, root-level keys in the app's secrets reach the app as environment variables, so
+these settings can go there.
 
 Other tools:
 ```bash

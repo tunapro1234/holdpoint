@@ -11,6 +11,7 @@ from app.common import (  # noqa: E402
     DOCS,
     EXAMPLES,
     STATE_LABEL,
+    amd_second_check,
     glossary,
     live_cpu_backend,
     provenance_badge,
@@ -65,11 +66,12 @@ else:
         backend = live_cpu_backend()
 
 if img is not None:
+    second_check = amd_second_check()
     try:
-        insp = inspect(img, backend, table, element_class)
+        insp = inspect(img, backend, table, element_class, vlm_check=second_check)
     except NotRecorded:
         st.warning("This image has no recorded result; processing live on CPU instead.")
-        insp = inspect(img, live_cpu_backend(), table, element_class)
+        insp = inspect(img, live_cpu_backend(), table, element_class, vlm_check=second_check)
 
     if insp.provenance["segment"].get("model") == BASELINE_MODEL:
         st.warning("The trained UNet is not loaded here, so this mask comes from the classical baseline "

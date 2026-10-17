@@ -136,6 +136,34 @@ def live_cpu_backend():
     return get_backend("cpu", weights=unet_weights())
 
 
+def amd_second_check():
+    """Second check on the AMD vLLM endpoint when HOLDPOINT_VLLM_BASE_URL is set, else None (the backend's own
+    check runs). Answers, "no answer" included, are kept per session and crop, so a rerun of the page (every
+    click) does not wait on the endpoint again."""
+    from holdpoint.backends import image_sha256
+    from holdpoint.vlm import VlmClient
+
+    client = VlmClient.from_env()
+    if client is None:
+        return None
+    answers = st.session_state.setdefault("amd_vlm_answers", {})
+
+    def check(crop):
+        key = image_sha256(crop)
+        if key not in answers:
+            answers[key] = client.check_or_unclear(crop)
+        return answers[key]
+
+    return check
+
+
+def report_writer():
+    """LLM writer for defect report drafts when HOLDPOINT_LLM_BASE_URL is set, else None (template text)."""
+    from holdpoint.ncr import LlmWriter
+
+    return LlmWriter.from_env()
+
+
 def threshold_table() -> ThresholdTable:
     return ThresholdTable.load(thresholds_path())
 

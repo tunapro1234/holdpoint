@@ -21,6 +21,9 @@ from .backends.base import VLM_LABELS, VlmResult, make_provenance
 
 DEFAULT_MODEL = "Qwen/Qwen2.5-VL-7B-Instruct"
 MAX_SENTENCE = 200
+# the app waits on these calls, so a dead endpoint has to fail fast (the openai default is 600 s, 2 retries)
+TIMEOUT_S = 30.0
+MAX_RETRIES = 1
 
 SCHEMA = {
     "type": "object",
@@ -52,6 +55,15 @@ NUMERIC_RE = re.compile(rf"\d|\b(?:{_NUM_WORDS})\b|\b(?:{_UNITS})\b|%", re.IGNOR
 UNPARSEABLE = "Model reply was not valid JSON for the schema."
 OFF_VOCAB = "Model label was outside the vocabulary."
 NUMERIC_DROPPED = "Sentence removed: it contained numeric content."
+
+
+def api_errors() -> tuple[type[BaseException], ...]:
+    """Errors that mean the endpoint did not give an answer (network, timeout, HTTP status), not a bug here."""
+    try:
+        from openai import OpenAIError
+    except ImportError:
+        return (OSError,)
+    return (OSError, OpenAIError)
 
 
 @dataclass
@@ -124,24 +136,45 @@ class VlmClient:
         self.backend = backend
         self._client = client
 
+    @classmethod
+    def from_env(cls) -> VlmClient | None:
+        """The client the app uses when HOLDPOINT_VLLM_BASE_URL is set, else None."""
+        return cls() if os.environ.get("HOLDPOINT_VLLM_BASE_URL") else None
+
     def _get_client(self):
         if self._client is None:
             from openai import OpenAI
 
-            self._client = OpenAI(base_url=self.base_url,
-                                  api_key=os.environ.get("HOLDPOINT_VLLM_API_KEY", "EMPTY"))
+            self._client = OpenAI(base_url=self.base_url, api_key=os.environ.get("HOLDPOINT_VLLM_API_KEY", "EMPTY"),
+                                  timeout=TIMEOUT_S, max_retries=MAX_RETRIES)
         return self._client
 
     def check(self, crop: np.ndarray) -> VlmResult:
-        resp = self._get_client().chat.completions.create(
-            model=self.model,
-            temperature=0,
-            max_tokens=120,
-            messages=messages_for(png_data_url(crop)),
-            response_format={"type": "json_schema",
-                             "json_schema": {"name": "vlm_check", "schema": SCHEMA, "strict": True}},
-        )
+        create = self._get_client().chat.completions.create
+        kw = dict(model=self.model, temperature=0, max_tokens=120, messages=messages_for(png_data_url(crop)))
+        flags = []
+        try:
+            resp = create(**kw, response_format={
+                "type": "json_schema", "json_schema": {"name": "vlm_check", "schema": SCHEMA, "strict": True}})
+        except Exception as e:
+            if getattr(e, "status_code", None) != 400:
+                raise
+            # some OpenAI-compatible servers refuse structured outputs; parse_reply still enforces the schema
+            resp = create(**kw)
+            flags.append("response_format_rejected")
         p = parse_reply(resp.choices[0].message.content or "")
         prov = make_provenance(self.backend, self.device, self.model, base_url=self.base_url,
-                               label="live on AMD", flags=p.flags)
+                               label="live on AMD", flags=flags + p.flags)
         return VlmResult(label=p.label, sentence=p.sentence, provenance=prov)
+
+    def check_or_unclear(self, crop: np.ndarray) -> VlmResult:
+        """check(), except that an endpoint which does not answer gives "unclear" with the reason, so the
+        measuring flow goes on without the second check."""
+        try:
+            return self.check(crop)
+        except api_errors() as e:
+            err = type(e).__name__
+            prov = make_provenance(self.backend, self.device, self.model, base_url=self.base_url,
+                                   label=f"live on AMD, no answer ({err})", error=err)
+            return VlmResult(label="unclear", sentence=f"Second check unavailable: the endpoint did not answer ({err}).",
+                             provenance=prov)

@@ -219,3 +219,51 @@ def test_number_guard_ignores_digits_inside_hashes():
     check_numbers("Crack width 0.15-0.35 mm on P-14.", fields)
     with pytest.raises(NumberGuardError):
         check_numbers("Crack is 39 cm long.", fields)
+
+
+# -- LlmWriter through the real openai client against a fake endpoint (tests/conftest.py: no network) ----------
+
+from conftest import chat_reply, error_reply, unreachable  # noqa: E402
+
+URL = "http://amd.invalid/v1"
+
+
+def test_llm_endpoint_text_used_when_clean(fake_endpoint):
+    bodies = fake_endpoint(lambda r: chat_reply("Element P-14 shows a crack of 0.15-0.35 mm. An inspector decides."))
+    r = draft_report(report(), LlmWriter(base_url=URL, model="m"))
+    assert r.text_source == "llm" and r.text.startswith("Element P-14")
+    assert bodies[0]["model"] == "m" and json.loads(bodies[0]["messages"][1]["content"])["band_mm"] == [0.15, 0.35]
+
+
+@pytest.mark.parametrize("handler,err", [(unreachable, "APIConnectionError"),
+                                         (lambda r: error_reply(401), "AuthenticationError"),
+                                         (lambda r: error_reply(500), "InternalServerError")])
+def test_llm_endpoint_down_falls_back_to_template(fake_endpoint, handler, err):
+    fake_endpoint(handler)
+    r = draft_report(report(), LlmWriter(base_url=URL))
+    assert r.text == TemplateWriter().write(report().fields())
+    assert r.text_source == f"template (llm unreachable: {err})"
+
+
+def test_llm_endpoint_invented_number_falls_back_to_template(fake_endpoint):
+    fake_endpoint(lambda r: chat_reply("Element P-14 needs repair within three days."))
+    r = draft_report(report(), LlmWriter(base_url=URL))
+    assert r.text_source.startswith("template (llm text rejected") and "three" in r.text_source
+
+
+def test_llm_empty_reply_falls_back_to_template(fake_endpoint):
+    fake_endpoint(lambda r: chat_reply("  "))
+    r = draft_report(report(), LlmWriter(base_url=URL))
+    assert r.text_source == "template (llm returned no text)" and "0.15-0.35 mm" in r.text
+
+
+def test_llm_writer_from_env(monkeypatch):
+    for k in ("HOLDPOINT_LLM_BASE_URL", "HOLDPOINT_VLLM_BASE_URL"):
+        monkeypatch.delenv(k, raising=False)
+    assert LlmWriter.from_env() is None
+    monkeypatch.setenv("HOLDPOINT_VLLM_BASE_URL", URL)  # the VLM endpoint alone does not switch the writer on
+    assert LlmWriter.from_env() is None
+    monkeypatch.setenv("HOLDPOINT_LLM_BASE_URL", URL)
+    monkeypatch.setenv("HOLDPOINT_LLM_MODEL", "m")
+    w = LlmWriter.from_env()
+    assert w.base_url == URL and w.model == "m"

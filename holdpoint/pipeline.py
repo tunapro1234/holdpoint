@@ -6,11 +6,12 @@ and the second-check label, and every piece keeps its provenance.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Callable
 
 import cv2
 import numpy as np
 
-from .backends import Backend, image_sha256
+from .backends import Backend, VlmResult, image_sha256
 from .decide import Suggestion, ThresholdTable, suggest
 from .measure import Scale, WidthResult, detect_scale, measure_width
 
@@ -82,7 +83,8 @@ def width_input_side(shape: tuple[int, ...], scale: Scale | None) -> int | None:
 
 
 def inspect(img: np.ndarray, backend: Backend, table: ThresholdTable, element_class: str,
-            calib_rel_err: float = 0.03) -> Inspection:
+            calib_rel_err: float = 0.03, vlm_check: Callable[[np.ndarray], VlmResult] | None = None) -> Inspection:
+    """`vlm_check` replaces the backend's second check (the app passes the AMD vLLM client when one is set)."""
     seg = backend.segment(img)
     scale = detect_scale(img)
     card = card_exclusion(seg.mask.shape, scale)
@@ -106,7 +108,7 @@ def inspect(img: np.ndarray, backend: Backend, table: ThresholdTable, element_cl
     except (NotImplementedError, KeyError):
         p = None
     try:
-        v = backend.vlm_check(img if not mask.any() else crack_crop(img, mask))
+        v = (vlm_check or backend.vlm_check)(img if not mask.any() else crack_crop(img, mask))
         label, sentence, prov["vlm"] = v.label, v.sentence, v.provenance
     except (NotImplementedError, KeyError):
         label, sentence = "unclear", "No second check available for this image."

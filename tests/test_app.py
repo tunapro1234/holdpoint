@@ -16,6 +16,8 @@ def isolated(tmp_path, monkeypatch):
     monkeypatch.setenv("HOLDPOINT_STATE", str(tmp_path / "state"))
     monkeypatch.setenv("HOLDPOINT_RESULTS", str(tmp_path / "results"))
     monkeypatch.setenv("HOLDPOINT_UNET_URL", "")  # tests never download the model
+    for k in ("HOLDPOINT_LLM_BASE_URL", "HOLDPOINT_VLLM_BASE_URL"):  # no AMD endpoint unless a test sets one
+        monkeypatch.delenv(k, raising=False)
     (tmp_path / "results").mkdir()
     return tmp_path
 
@@ -188,3 +190,81 @@ def test_unet_weights_order_and_checksum(tmp_path, monkeypatch):
 
     monkeypatch.setenv("HOLDPOINT_UNET_WEIGHTS", str(wrong))
     assert common.unet_weights() == wrong
+
+
+# -- AMD endpoints switched on by env, served by the fake endpoint in tests/conftest.py (no network) -------------
+
+from conftest import chat_reply, unreachable  # noqa: E402
+
+AMD_URL = "http://amd.invalid/v1"
+
+
+def queue_one_item():
+    at = run("pages/1_Inspect.py")
+    at.button[0].click().run()  # Send to review queue
+    assert not at.exception
+
+
+def report_text(rq):
+    return rq.text_area[0].value, next(c.value for c in rq.caption if c.value.startswith("Text source"))
+
+
+def test_review_without_llm_env_uses_template():
+    queue_one_item()
+    text, source = report_text(run("pages/2_Review_queue.py"))
+    assert source == "Text source: template"
+
+
+def test_review_uses_llm_when_env_set(monkeypatch, fake_endpoint):
+    queue_one_item()
+    monkeypatch.setenv("HOLDPOINT_LLM_BASE_URL", AMD_URL)
+    bodies = fake_endpoint(lambda r: chat_reply("Element P-14: the second check saw a crack. An inspector decides."))
+    rq = run("pages/2_Review_queue.py")
+    text, source = report_text(rq)
+    assert source == "Text source: llm" and text.startswith("Element P-14: the second check")
+    assert json.loads(bodies[0]["messages"][1]["content"])["element_id"] == "P-14"
+    rq.text_input(key="who0").set_value("inspector-1").run()  # a rerun reuses the draft, no second call
+    assert len(bodies) == 1
+
+
+def test_review_llm_unreachable_falls_back_to_template(monkeypatch, fake_endpoint):
+    queue_one_item()
+    monkeypatch.setenv("HOLDPOINT_LLM_BASE_URL", AMD_URL)
+    fake_endpoint(unreachable)
+    text, source = report_text(run("pages/2_Review_queue.py"))
+    assert source == "Text source: template (llm unreachable: APIConnectionError)"
+    assert "An inspector must confirm" in text
+
+
+def test_review_llm_invented_number_falls_back_to_template(monkeypatch, fake_endpoint):
+    queue_one_item()
+    monkeypatch.setenv("HOLDPOINT_LLM_BASE_URL", AMD_URL)
+    fake_endpoint(lambda r: chat_reply("Element P-14 has a crack about two millimetres wide."))
+    text, source = report_text(run("pages/2_Review_queue.py"))
+    assert source.startswith("Text source: template (llm text rejected") and "two" not in text
+
+
+def test_inspect_second_check_on_amd_when_env_set(monkeypatch, fake_endpoint):
+    baseline = run("pages/1_Inspect.py")
+    monkeypatch.setenv("HOLDPOINT_VLLM_BASE_URL", AMD_URL)
+    monkeypatch.setenv("HOLDPOINT_VLLM_DEVICE", "AMD Instinct MI300X")
+    bodies = fake_endpoint(lambda r: chat_reply('{"label": "form_oil_stain", "sentence": "A smooth dark smear."}'))
+    at = run("pages/1_Inspect.py")
+    text = all_text(at)
+    assert "**Second check:** form oil stain. A smooth dark smear." in text
+    assert "live on AMD · model Qwen/Qwen2.5-VL-7B-Instruct" in text and "AMD Instinct MI300X" in text
+    assert bodies[0]["messages"][0]["content"][1]["image_url"]["url"].startswith("data:image/png;base64,")
+    assert [(m.label, m.value) for m in at.metric] == [(m.label, m.value) for m in baseline.metric]
+    at.selectbox[1].set_value(at.selectbox[1].options[-1]).run()  # a rerun does not ask the endpoint again
+    assert len(bodies) == 1
+
+
+def test_inspect_amd_unreachable_is_unclear_and_measures_anyway(monkeypatch, fake_endpoint):
+    baseline = run("pages/1_Inspect.py")
+    monkeypatch.setenv("HOLDPOINT_VLLM_BASE_URL", AMD_URL)
+    fake_endpoint(unreachable)
+    at = run("pages/1_Inspect.py")
+    text = all_text(at)
+    assert "**Second check:** unclear. Second check unavailable" in text and "APIConnectionError" in text
+    assert "live on AMD, no answer (APIConnectionError)" in text
+    assert [(m.label, m.value) for m in at.metric] == [(m.label, m.value) for m in baseline.metric]
